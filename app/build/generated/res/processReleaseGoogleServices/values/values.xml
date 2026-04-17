@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">28869735448-oe3qks4oalht9gh4878vmndukdcueebd.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">28869735448</string>
+    <string name="google_api_key" translatable="false">AIzaSyCVofjYSuRY4ZAVrFMQ2eFh7s_mQKdL9SQ</string>
+    <string name="google_app_id" translatable="false">1:28869735448:android:bcec5df1936b52db8b7f6d</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCVofjYSuRY4ZAVrFMQ2eFh7s_mQKdL9SQ</string>
+    <string name="google_storage_bucket" translatable="false">readerapp-5cf78.firebasestorage.app</string>
+    <string name="project_id" translatable="false">readerapp-5cf78</string>
+</resources>
