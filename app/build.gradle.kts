@@ -16,10 +16,38 @@ android {
         applicationId = "com.design.readerapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+
+        // Versionado dinámico:
+        // - En CI (GitHub Actions): valores inyectados desde el tag de Git.
+        // - En local: usa los defaults ("1.0" y 1).
+        versionName = System.getenv("VERSION_NAME") ?: "1.0"
+        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 1
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        create("release") {
+            // Credenciales leídas desde variables de entorno (GitHub Secrets en CI).
+            // En local estarán vacías y el APK saldrá sin firmar (solo con un warning).
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            val keystorePwd = System.getenv("KEYSTORE_PASSWORD")
+            val alias = System.getenv("KEY_ALIAS")
+            val keyPwd = System.getenv("KEY_PASSWORD")
+
+            // Solo asignamos si TODAS las env vars existen.
+            // Así el bloque es inerte en local (no crashea) y activo en CI.
+            if (!keystorePath.isNullOrBlank() &&
+                !keystorePwd.isNullOrBlank() &&
+                !alias.isNullOrBlank() &&
+                !keyPwd.isNullOrBlank()
+            ) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePwd
+                keyAlias = alias
+                keyPassword = keyPwd
+            }
+        }
     }
 
     buildTypes {
@@ -29,12 +57,18 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Asignación INCONDICIONAL. La lógica condicional vive dentro
+            // del signingConfig, no acá. Así evitamos el bug del CI donde
+            // el if no se evaluaba correctamente en tiempo de configuración.
+            signingConfig = signingConfigs.getByName("release")
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
     buildFeatures {
         compose = true
     }
