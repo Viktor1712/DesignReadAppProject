@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +32,7 @@ import androidx.navigation.NavController
 import com.design.readerapp.ReaderState
 import com.design.readerapp.PdfUtils
 import java.io.File
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -144,8 +147,18 @@ fun GroupScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(books) { book ->
-                val uri = Uri.parse(book["uri"] ?: "")
+                val uriString = book["uri"] ?: ""
+                val uri = Uri.parse(uriString)
                 val bitmap = remember(book) { PdfUtils.generateThumbnail(context, uri) }
+                
+                // Cargar progreso desde SharedPreferences
+                val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
+                val savedPage = prefs.getInt("page_$uriString", 0)
+                // Para el total necesitamos que se haya abierto al menos una vez
+                // Por ahora lo guardaremos en ReaderScreen cuando se cargue el PDF
+                // Si no hay total guardado, mostramos 0
+                val totalPages = prefs.getInt("total_$uriString", 0)
+                val progress = if (totalPages > 0) (savedPage + 1).toFloat() / totalPages else 0f
 
                 Card(
                     modifier = Modifier
@@ -170,7 +183,7 @@ fun GroupScreen(
                                 .fillMaxWidth()
                                 .height(200.dp)
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.BottomCenter
                         ) {
                             if (bitmap != null) {
                                 Image(
@@ -180,16 +193,45 @@ fun GroupScreen(
                                     modifier = Modifier.fillMaxSize()
                                 )
                             } else {
-                                Text("PDF", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("PDF", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
+                                }
+                            }
+                            
+                            // Barra de progreso sobre la imagen en la parte inferior
+                            if (progress > 0) {
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier.fillMaxWidth().height(4.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = Color.Transparent,
+                                    strokeCap = StrokeCap.Butt
+                                )
                             }
                         }
-                        Text(
-                            text = book["name"] ?: "Libro",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = book["name"] ?: "Libro",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            
+                            if (progress > 0) {
+                                Text(
+                                    text = "${(progress * 100).toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

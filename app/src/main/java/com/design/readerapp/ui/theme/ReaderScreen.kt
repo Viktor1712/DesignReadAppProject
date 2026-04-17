@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.barteksc.pdfviewer.PDFView
 import com.design.readerapp.ReaderState
 
@@ -38,20 +40,32 @@ fun ReaderScreen() {
     val savedPage = prefs.getInt(key, 0)
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Lector") }) }
+        topBar = {
+            if (showUI) {
+                TopAppBar(
+                    title = { Text("Lector") },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    )
+                )
+            }
+        }
     ) { padding ->
 
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(Modifier.fillMaxSize()) {
 
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().padding(padding),
                 factory = {
 
                     PDFView(it, null).apply {
 
                         fromUri(pdfUri)
                             .defaultPage(savedPage)
-                            .onLoad { total = it }
+                            .onLoad { 
+                                total = it
+                                prefs.edit().putInt("total_$pdfUri", it).apply()
+                            }
                             .onPageChange { p, _ ->
                                 page = p
                                 prefs.edit().putInt(key, p).apply()
@@ -66,25 +80,46 @@ fun ReaderScreen() {
             )
 
             if (showUI && total > 0) {
-
                 val progress = (page + 1) / total.toFloat()
 
                 Column(
                     Modifier
                         .align(androidx.compose.ui.Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Color.Black.copy(0.7f))
-                        .padding(12.dp)
+                        .background(Color.Black.copy(0.75f))
                 ) {
-
-                    LinearProgressIndicator(progress = progress)
-
-                    Spacer(Modifier.height(6.dp))
-
-                    Text(
-                        "Página ${page + 1} / $total",
-                        color = Color.White
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.White.copy(alpha = 0.2f),
+                        strokeCap = StrokeCap.Round
                     )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Página ${page + 1} de $total",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                        )
+                        
+                        Text(
+                            "${(progress * 100).toInt()}%",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
