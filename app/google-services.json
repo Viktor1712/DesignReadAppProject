@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "28869735448",
+    "project_id": "readerapp-5cf78",
+    "storage_bucket": "readerapp-5cf78.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28869735448:android:bcec5df1936b52db8b7f6d",
+        "android_client_info": {
+          "package_name": "com.design.readerapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "28869735448-oanpgh23mbbv3ik6v5ammqgmtdt1ce79.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.design.readerapp",
+            "certificate_hash": "61735953f4583f00b4337b74f843e361ee1de2bc"
+          }
+        },
+        {
+          "client_id": "28869735448-oe3qks4oalht9gh4878vmndukdcueebd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVofjYSuRY4ZAVrFMQ2eFh7s_mQKdL9SQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "28869735448-oe3qks4oalht9gh4878vmndukdcueebd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
