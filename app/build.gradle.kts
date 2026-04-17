@@ -28,24 +28,34 @@ android {
 
     signingConfigs {
         create("release") {
-            // Credenciales leídas desde variables de entorno (GitHub Secrets en CI).
-            // En local estarán vacías y el APK saldrá sin firmar (solo con un warning).
             val keystorePath = System.getenv("KEYSTORE_PATH")
             val keystorePwd = System.getenv("KEYSTORE_PASSWORD")
             val alias = System.getenv("KEY_ALIAS")
             val keyPwd = System.getenv("KEY_PASSWORD")
 
-            // Solo asignamos si TODAS las env vars existen.
-            // Así el bloque es inerte en local (no crashea) y activo en CI.
+            // DIAGNÓSTICO (remover después de que funcione)
+            println("🔍 SIGNING DIAGNOSTIC:")
+            println("  KEYSTORE_PATH: ${if (keystorePath.isNullOrBlank()) "❌ EMPTY" else "✅ $keystorePath"}")
+            println("  KEYSTORE_PASSWORD: ${if (keystorePwd.isNullOrBlank()) "❌ EMPTY" else "✅ set (${keystorePwd.length} chars)"}")
+            println("  KEY_ALIAS: ${if (alias.isNullOrBlank()) "❌ EMPTY" else "✅ $alias"}")
+            println("  KEY_PASSWORD: ${if (keyPwd.isNullOrBlank()) "❌ EMPTY" else "✅ set (${keyPwd.length} chars)"}")
+
             if (!keystorePath.isNullOrBlank() &&
                 !keystorePwd.isNullOrBlank() &&
                 !alias.isNullOrBlank() &&
                 !keyPwd.isNullOrBlank()
             ) {
-                storeFile = file(keystorePath)
+                val file = file(keystorePath)
+                println("  🔎 Keystore file exists: ${file.exists()}, size: ${if (file.exists()) file.length() else 0}")
+
+                storeFile = file
                 storePassword = keystorePwd
                 keyAlias = alias
                 keyPassword = keyPwd
+
+                println("  ✅ Signing config APPLIED")
+            } else {
+                println("  ❌ Signing config NOT applied (missing env vars)")
             }
         }
     }
