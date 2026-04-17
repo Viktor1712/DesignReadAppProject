@@ -151,13 +151,10 @@ fun GroupScreen(
                 val uri = Uri.parse(uriString)
                 val bitmap = remember(book) { PdfUtils.generateThumbnail(context, uri) }
                 
-                // Cargar progreso desde SharedPreferences
+                // Cargar progreso desde SharedPreferences (usando UID para separar por usuario)
                 val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
-                val savedPage = prefs.getInt("page_$uriString", 0)
-                // Para el total necesitamos que se haya abierto al menos una vez
-                // Por ahora lo guardaremos en ReaderScreen cuando se cargue el PDF
-                // Si no hay total guardado, mostramos 0
-                val totalPages = prefs.getInt("total_$uriString", 0)
+                val savedPage = prefs.getInt("page_${uid}_$uriString", 0)
+                val totalPages = prefs.getInt("total_${uid}_$uriString", 0)
                 val progress = if (totalPages > 0) (savedPage + 1).toFloat() / totalPages else 0f
 
                 Card(

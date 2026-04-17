@@ -16,18 +16,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.barteksc.pdfviewer.PDFView
 import com.design.readerapp.ReaderState
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ReaderScreen() {
 
     val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+    val uid = auth.currentUser?.uid ?: "anonymous"
     val pdfUri = ReaderState.currentPdf ?: return
 
     var page by remember { mutableStateOf(0) }
     var total by remember { mutableStateOf(0) }
     var showUI by remember { mutableStateOf(true) }
 
-    val key = "page_${pdfUri}"
+    val key = "page_${uid}_${pdfUri}"
+    val totalKey = "total_${uid}_${pdfUri}"
 
     LaunchedEffect(showUI) {
         if (showUI) {
@@ -64,7 +68,7 @@ fun ReaderScreen() {
                             .defaultPage(savedPage)
                             .onLoad { 
                                 total = it
-                                prefs.edit().putInt("total_$pdfUri", it).apply()
+                                prefs.edit().putInt(totalKey, it).apply()
                             }
                             .onPageChange { p, _ ->
                                 page = p
