@@ -6,40 +6,16 @@ plugins {
 
 android {
     namespace = "com.design.readerapp"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.design.readerapp"
         minSdk = 24
-        targetSdk = 36
-        versionName = System.getenv("VERSION_NAME") ?: "1.0"
-        versionCode = System.getenv("VERSION_CODE")?.toInt() ?: 1
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            val keystorePwd = System.getenv("KEYSTORE_PASSWORD")
-            val alias = System.getenv("KEY_ALIAS")
-            val keyPwd = System.getenv("KEY_PASSWORD")
-
-            if (!keystorePath.isNullOrBlank() &&
-                !keystorePwd.isNullOrBlank() &&
-                !alias.isNullOrBlank() &&
-                !keyPwd.isNullOrBlank()
-            ) {
-                storeFile = file(keystorePath)
-                storePassword = keystorePwd
-                keyAlias = alias
-                keyPassword = keyPwd
-            }
-        }
     }
 
     buildTypes {
@@ -49,20 +25,19 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
         }
     }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     buildFeatures {
         compose = true
     }
-
     packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
         jniLibs {
             useLegacyPackaging = false
         }

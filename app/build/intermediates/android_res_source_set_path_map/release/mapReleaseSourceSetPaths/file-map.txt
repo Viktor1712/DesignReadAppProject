@@ -1,8 +1,0 @@
-com.design.readerapp-pngs-0 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\generated\res\pngs\release
-com.design.readerapp-res-1 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\generated\res\processReleaseGoogleServices
-com.design.readerapp-updated_navigation_xml-2 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\generated\updated_navigation_xml\release
-com.design.readerapp-packageReleaseResources-3 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\intermediates\incremental\release\packageReleaseResources\merged.dir
-com.design.readerapp-packageReleaseResources-4 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
-com.design.readerapp-release-5 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\build\intermediates\merged_res\release\mergeReleaseResources
-com.design.readerapp-main-6 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\src\main\res
-com.design.readerapp-release-7 C:\Users\Vikticor\AndroidStudioProjects\ReaderApp\app\src\release\res
