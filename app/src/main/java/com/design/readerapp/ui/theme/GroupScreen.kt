@@ -10,15 +10,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -31,10 +28,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.design.readerapp.ReaderState
 import com.design.readerapp.PdfUtils
-import java.io.File
+import com.design.readerapp.Book
+import com.design.readerapp.BooksService
+import kotlinx.coroutines.launch
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,64 +44,60 @@ fun GroupScreen(
 ) {
 
     val context = LocalContext.current
-    val db = FirebaseFirestore.getInstance()
+    val scope = rememberCoroutineScope()
     val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-    var books by remember { mutableStateOf(listOf<Map<String, String>>()) }
-    var selectedBook by remember { mutableStateOf<Map<String, String>?>(null) }
+    var books by remember { mutableStateOf(listOf<Book>()) }
+    var selectedBook by remember { mutableStateOf<Book?>(null) }
     var showMenu by remember { mutableStateOf(false) }
-    var showMoveDialog by remember { mutableStateOf(false) }
-    var allGroups by remember { mutableStateOf(listOf<String>()) }
+    var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(uid) {
-        db.collection("users").document(uid).collection("groups")
-            .addSnapshotListener { snap, _ ->
-                val list = snap?.documents?.map { it.id }?.toMutableList() ?: mutableListOf()
-                if (!list.contains("Favoritos")) list.add("Favoritos")
-                allGroups = list.sorted()
+    fun loadBooks() {
+        scope.launch {
+            try {
+                isLoading = true
+                // Filtramos por categoría (groupName) si la API lo permite, 
+                // o filtramos localmente si la API devuelve todos.
+                val allBooks = BooksService.getBooks()
+                books = allBooks.filter { it.categoria == groupName || groupName == "Todos" }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error al cargar libros", Toast.LENGTH_SHORT).show()
+            } finally {
+                isLoading = false
             }
+        }
     }
 
     LaunchedEffect(groupName) {
-        db.collection("users").document(uid).collection("groups").document(groupName)
-            .collection("books")
-            .addSnapshotListener { snapshot, exception ->
-                if (exception != null) return@addSnapshotListener
-                books = snapshot?.documents?.mapNotNull { doc ->
-                    val data = doc.data ?: return@mapNotNull null
-                    val map = data.mapValues { it.value.toString() }.toMutableMap()
-                    map["id"] = doc.id
-                    map
-                } ?: emptyList()
-            }
+        loadBooks()
     }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                val inputStream = context.contentResolver.openInputStream(uri) ?: throw Exception("Error")
-                
-                var fileName = "libro.pdf"
-                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex != -1 && cursor.moveToFirst()) fileName = cursor.getString(nameIndex)
+            scope.launch {
+                try {
+                    var fileName = "libro.pdf"
+                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1 && cursor.moveToFirst()) fileName = cursor.getString(nameIndex)
+                    }
+
+                    val newBook = Book(
+                        titulo = fileName,
+                        autor = "Desconocido",
+                        categoria = groupName,
+                        pdfUrl = uri.toString(),
+                        estado = "Publicado"
+                    )
+                    
+                    BooksService.createBook(newBook)
+                    loadBooks()
+                    Toast.makeText(context, "Libro agregado", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
-
-                val tempFile = File(context.cacheDir, fileName)
-                tempFile.outputStream().use { inputStream.copyTo(it) }
-
-                val bookId = uri.toString().hashCode().toString()
-                val fileUri = Uri.fromFile(tempFile).toString()
-
-                db.collection("users").document(uid).collection("groups").document(groupName)
-                    .collection("books").document(bookId)
-                    .set(mapOf("uri" to fileUri, "name" to fileName))
-
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -133,7 +127,11 @@ fun GroupScreen(
         }
     ) { padding ->
 
-        if (books.isEmpty()) {
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (books.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No hay libros en esta categoría", color = MaterialTheme.colorScheme.outline)
             }
@@ -147,11 +145,10 @@ fun GroupScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(books) { book ->
-                val uriString = book["uri"] ?: ""
+                val uriString = book.pdfUrl
                 val uri = Uri.parse(uriString)
                 val bitmap = remember(book) { PdfUtils.generateThumbnail(context, uri) }
                 
-                // Cargar progreso desde SharedPreferences (usando UID para separar por usuario)
                 val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
                 val savedPage = prefs.getInt("page_${uid}_$uriString", 0)
                 val totalPages = prefs.getInt("total_${uid}_$uriString", 0)
@@ -162,7 +159,9 @@ fun GroupScreen(
                         .fillMaxWidth()
                         .combinedClickable(
                             onClick = {
-                                try { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } catch (_: Exception) {}
+                                try { 
+                                    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) 
+                                } catch (_: Exception) {}
                                 ReaderState.currentPdf = uri
                                 navController.navigate("reader")
                             },
@@ -195,7 +194,6 @@ fun GroupScreen(
                                 }
                             }
                             
-                            // Barra de progreso sobre la imagen en la parte inferior
                             if (progress > 0) {
                                 LinearProgressIndicator(
                                     progress = { progress },
@@ -213,7 +211,7 @@ fun GroupScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = book["name"] ?: "Libro",
+                                text = book.titulo,
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.labelLarge,
                                 maxLines = 1,
@@ -239,60 +237,21 @@ fun GroupScreen(
         ModalBottomSheet(onDismissRequest = { showMenu = false }) {
             Column(Modifier.padding(bottom = 32.dp)) {
                 ListItem(
-                    headlineContent = { Text("Añadir a Favoritos") },
-                    leadingContent = { Text("⭐", fontSize = 20.sp) },
-                    modifier = Modifier.clickable {
-                        val id = selectedBook!!["id"] ?: ""
-                        val data = selectedBook!!.filterKeys { it != "id" }
-                        db.collection("users").document(uid).collection("groups").document("Favoritos").collection("books").document(id).set(data)
-                        showMenu = false
-                    }
-                )
-                ListItem(
-                    headlineContent = { Text("Mover a otra categoría") },
-                    leadingContent = { Text("📦", fontSize = 20.sp) },
-                    modifier = Modifier.clickable {
-                        showMenu = false
-                        showMoveDialog = true
-                    }
-                )
-                ListItem(
                     headlineContent = { Text("Eliminar libro", color = MaterialTheme.colorScheme.error) },
                     leadingContent = { Text("🗑️", fontSize = 20.sp) },
                     modifier = Modifier.clickable {
-                        db.collection("users").document(uid).collection("groups").document(groupName).collection("books").document(selectedBook!!["id"] ?: "").delete()
-                        showMenu = false
+                        scope.launch {
+                            try {
+                                selectedBook?.id?.let { BooksService.deleteBook(it) }
+                                loadBooks()
+                                showMenu = false
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error al eliminar", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 )
             }
         }
-    }
-
-    if (showMoveDialog && selectedBook != null) {
-        AlertDialog(
-            onDismissRequest = { showMoveDialog = false },
-            title = { Text("Mover a...") },
-            text = {
-                LazyColumn {
-                    items(allGroups) { group ->
-                        if (group != groupName) {
-                            ListItem(
-                                headlineContent = { Text(group) },
-                                modifier = Modifier.clickable {
-                                    val id = selectedBook?.get("id") ?: ""
-                                    val bookData = selectedBook?.filterKeys { it != "id" } ?: emptyMap()
-                                    val batch = db.batch()
-                                    batch.set(db.collection("users").document(uid).collection("groups").document(group).collection("books").document(id), bookData)
-                                    batch.delete(db.collection("users").document(uid).collection("groups").document(groupName).collection("books").document(id))
-                                    batch.commit()
-                                    showMoveDialog = false
-                                }
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showMoveDialog = false }) { Text("Cancelar") } }
-        )
     }
 }
