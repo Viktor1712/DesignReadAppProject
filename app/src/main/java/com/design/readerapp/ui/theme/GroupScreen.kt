@@ -26,10 +26,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.design.readerapp.ReaderState
-import com.design.readerapp.PdfUtils
+import coil.compose.AsyncImage
 import com.design.readerapp.Book
 import com.design.readerapp.BooksService
+import com.design.readerapp.Favorite
+import com.design.readerapp.ReadingProgress
+import com.design.readerapp.ReaderState
 import kotlinx.coroutines.launch
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
@@ -45,23 +47,36 @@ fun GroupScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val uid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    // For now, we use a fixed userId = 1 since we don't have mapping yet
+    val userId = 1 
 
     var books by remember { mutableStateOf(listOf<Book>()) }
+    var favorites by remember { mutableStateOf(listOf<Favorite>()) }
+    var readingProgress by remember { mutableStateOf(listOf<ReadingProgress>()) }
+    
     var selectedBook by remember { mutableStateOf<Book?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
 
-    fun loadBooks() {
+    fun loadData() {
         scope.launch {
             try {
                 isLoading = true
-                // Filtramos por categoría (groupName) si la API lo permite, 
-                // o filtramos localmente si la API devuelve todos.
                 val allBooks = BooksService.getBooks()
-                books = allBooks.filter { it.categoria == groupName || groupName == "Todos" }
+                val allFavorites = BooksService.getFavorites()
+                val allProgress = BooksService.getReadingProgress()
+                
+                favorites = allFavorites.filter { it.userId == userId }
+                readingProgress = allProgress.filter { it.userId == userId }
+
+                books = if (groupName == "favoritos") {
+                    val favIds = favorites.map { it.bookId }
+                    allBooks.filter { it.id in favIds }
+                } else {
+                    allBooks.filter { it.category == groupName }
+                }
             } catch (e: Exception) {
-                Toast.makeText(context, "Error al cargar libros", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error al cargar datos", Toast.LENGTH_SHORT).show()
             } finally {
                 isLoading = false
             }
@@ -69,43 +84,13 @@ fun GroupScreen(
     }
 
     LaunchedEffect(groupName) {
-        loadBooks()
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            scope.launch {
-                try {
-                    var fileName = "libro.pdf"
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                        if (nameIndex != -1 && cursor.moveToFirst()) fileName = cursor.getString(nameIndex)
-                    }
-
-                    val newBook = Book(
-                        titulo = fileName,
-                        autor = "Desconocido",
-                        categoria = groupName,
-                        pdfUrl = uri.toString(),
-                        estado = "Publicado"
-                    )
-                    
-                    BooksService.createBook(newBook)
-                    loadBooks()
-                    Toast.makeText(context, "Libro agregado", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        loadData()
     }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(groupName, fontWeight = FontWeight.Bold) },
+                title = { Text(groupName.replaceFirstChar { it.uppercase() }, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Text("⬅️", fontSize = 20.sp)
@@ -117,13 +102,6 @@ fun GroupScreen(
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            LargeFloatingActionButton(
-                onClick = { launcher.launch(arrayOf("application/pdf")) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(24.dp)
-            ) { Text("+", fontSize = 32.sp) }
         }
     ) { padding ->
 
@@ -145,25 +123,21 @@ fun GroupScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(books) { book ->
-                val uriString = book.pdfUrl
-                val uri = Uri.parse(uriString)
-                val bitmap = remember(book) { PdfUtils.generateThumbnail(context, uri) }
+                val progressObj = readingProgress.find { it.bookId == book.id }
+                val progress = if (progressObj != null && progressObj.totalPages > 0) {
+                    progressObj.currentPage.toFloat() / progressObj.totalPages
+                } else 0f
                 
-                val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
-                val savedPage = prefs.getInt("page_${uid}_$uriString", 0)
-                val totalPages = prefs.getInt("total_${uid}_$uriString", 0)
-                val progress = if (totalPages > 0) (savedPage + 1).toFloat() / totalPages else 0f
+                val isFav = favorites.any { it.bookId == book.id }
 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(
                             onClick = {
-                                try { 
-                                    context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) 
-                                } catch (_: Exception) {}
-                                ReaderState.currentPdf = uri
-                                navController.navigate("reader")
+                                ReaderState.currentPdf = Uri.parse(book.pdfUrl)
+                                // We should also pass the book ID to the reader to update progress
+                                navController.navigate("reader?bookId=${book.id}")
                             },
                             onLongClick = {
                                 selectedBook = book
@@ -177,21 +151,23 @@ fun GroupScreen(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .height(200.dp)
+                                .height(220.dp)
                                 .background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.BottomCenter
                         ) {
-                            if (bitmap != null) {
-                                Image(
-                                    bitmap = bitmap.asImageBitmap(),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                            AsyncImage(
+                                model = book.coverUrl,
+                                contentDescription = book.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            
+                            if (isFav) {
+                                Text(
+                                    "❤️", 
+                                    Modifier.align(Alignment.TopEnd).padding(8.dp),
+                                    fontSize = 18.sp
                                 )
-                            } else {
-                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text("PDF", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
-                                }
                             }
                             
                             if (progress > 0) {
@@ -205,25 +181,28 @@ fun GroupScreen(
                             }
                         }
                         
-                        Row(
-                            Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Column(Modifier.padding(12.dp)) {
                             Text(
-                                text = book.titulo,
-                                modifier = Modifier.weight(1f),
+                                text = book.title,
                                 style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = book.author,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             
                             if (progress > 0) {
                                 Text(
-                                    text = "${(progress * 100).toInt()}%",
+                                    text = "${(progress * 100).toInt()}% completado",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(start = 4.dp)
+                                    modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
                         }
@@ -234,21 +213,36 @@ fun GroupScreen(
     }
 
     if (showMenu && selectedBook != null) {
+        val isFav = favorites.any { it.bookId == selectedBook?.id }
+        
         ModalBottomSheet(onDismissRequest = { showMenu = false }) {
             Column(Modifier.padding(bottom = 32.dp)) {
                 ListItem(
-                    headlineContent = { Text("Eliminar libro", color = MaterialTheme.colorScheme.error) },
-                    leadingContent = { Text("🗑️", fontSize = 20.sp) },
+                    headlineContent = { Text(if (isFav) "Quitar de favoritos" else "Añadir a favoritos") },
+                    leadingContent = { Text(if (isFav) "💔" else "❤️", fontSize = 20.sp) },
                     modifier = Modifier.clickable {
                         scope.launch {
                             try {
-                                selectedBook?.id?.let { BooksService.deleteBook(it) }
-                                loadBooks()
+                                if (isFav) {
+                                    val fav = favorites.find { it.bookId == selectedBook?.id }
+                                    fav?.id?.let { BooksService.removeFavorite(it) }
+                                } else {
+                                    BooksService.addFavorite(Favorite(userId = userId, bookId = selectedBook?.id ?: 0))
+                                }
+                                loadData()
                                 showMenu = false
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Error al eliminar", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Error al actualizar favoritos", Toast.LENGTH_SHORT).show()
                             }
                         }
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text("Ver detalles", color = MaterialTheme.colorScheme.primary) },
+                    leadingContent = { Text("ℹ️", fontSize = 20.sp) },
+                    modifier = Modifier.clickable {
+                        // Show details dialog or similar
+                        showMenu = false
                     }
                 )
             }

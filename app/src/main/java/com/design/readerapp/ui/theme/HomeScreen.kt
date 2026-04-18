@@ -15,11 +15,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.design.readerapp.Category
 import com.design.readerapp.BooksService
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-
-const val FAVORITOS = "Favoritos"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,17 +27,19 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
     val auth = FirebaseAuth.getInstance()
     val scope = rememberCoroutineScope()
     
-    var categories by remember { mutableStateOf(listOf<String>()) }
+    var categories by remember { mutableStateOf(listOf<Category>()) }
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         try {
-            val books = BooksService.getBooks()
-            val cats = books.map { it.categoria }.distinct().toMutableList()
-            if (!cats.contains(FAVORITOS)) cats.add(FAVORITOS)
-            categories = cats.sorted()
+            val cats = BooksService.getCategories()
+            categories = cats
         } catch (e: Exception) {
-            categories = listOf(FAVORITOS, "Mis Libros")
+            // Fallback if API fails
+            categories = listOf(
+                Category(name = "favoritos", label = "Favoritos"),
+                Category(name = "clasico", label = "Clásico")
+            )
         } finally {
             isLoading = false
         }
@@ -49,7 +50,7 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
             CenterAlignedTopAppBar(
                 title = { 
                     Text(
-                        "Mis Libros", 
+                        "Librería Digital", 
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     ) 
@@ -81,39 +82,57 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(categories) { group ->
-                    Card(
-                        onClick = { navController.navigate("group/$group") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(20.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = group,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    text = if (group == FAVORITOS) "Tus preferidoss" else "Colección de Azure",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                        }
-                    }
+                // Special case for "Favorites" if not in categories list
+                item {
+                    CategoryCard(
+                        label = "Favoritos",
+                        description = "Tus libros preferidos",
+                        onClick = { navController.navigate("group/favoritos") }
+                    )
+                }
+
+                items(categories) { category ->
+                    CategoryCard(
+                        label = category.label,
+                        description = "Explorar ${category.label}",
+                        onClick = { navController.navigate("group/${category.name}") }
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun CategoryCard(label: String, description: String, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
         }
     }
 }

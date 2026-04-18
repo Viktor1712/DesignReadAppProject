@@ -8,7 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.design.readerapp.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
 
@@ -81,8 +83,15 @@ fun MyApp(incomingPdf: Uri?, darkTheme: Boolean, onThemeToggle: () -> Unit) {
             GroupScreen(navController, name, darkTheme, onThemeToggle)
         }
 
-        composable("reader") {
-            ReaderScreen()
+        composable(
+            route = "reader?bookId={bookId}",
+            arguments = listOf(navArgument("bookId") { 
+                defaultValue = -1
+                type = NavType.IntType 
+            })
+        ) {
+            val bookId = it.arguments?.getInt("bookId") ?: -1
+            ReaderScreen(bookId)
         }
     }
 }
