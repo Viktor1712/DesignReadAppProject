@@ -1,57 +1,60 @@
-# ReadFlow 📚
+# Biblio-TEC 📚
 
-**ReadFlow** es una aplicación móvil avanzada para la lectura de libros digitales (PDF), diseñada para ofrecer una experiencia fluida y conectada. Esta aplicación es el cliente móvil de un ecosistema que incluye una API robusta en Azure y una versión web.
+**Biblio-TEC** es una aplicación móvil para la lectura de libros digitales (PDF), diseñada para ofrecer una experiencia fluida y conectada. Es el cliente móvil de un ecosistema que incluye una API en Azure y una versión web.
 
 ## 🚀 Características Principales
 
-- **Gestión de Biblioteca**: Visualiza libros organizados por categorías obtenidas dinámicamente desde una API externa.
-- **Sincronización en Tiempo Real**: El progreso de lectura (página actual) se guarda automáticamente en la nube, permitiéndote retomar la lectura exactamente donde la dejaste.
-- **Lectura Offline Inteligente**: Los libros se descargan y cachean localmente para garantizar una lectura fluida sin depender constantemente de la conexión a internet.
-- **Favoritos**: Sistema para marcar y gestionar tus libros preferidos.
-- **Autenticación**: Integración con Firebase para un acceso seguro de los usuarios.
-- **Interfaz Moderna**: Construida totalmente con **Jetpack Compose**, soportando temas claros y oscuros.
+- **Biblioteca Personal**: Visualiza, sube y organiza libros por categorías.
+- **Lector PDF Integrado**: Visualización de documentos de alto rendimiento con seguimiento de progreso.
+- **Progreso de Lectura en la Nube**: El progreso se sincroniza automáticamente para retomar la lectura en cualquier dispositivo.
+- **Notificaciones en Tiempo Real**: Conexión SignalR con servicio en segundo plano para recibir notificaciones push aunque la app no esté activa.
+- **Favoritos y Me Gusta**: Sistema para marcar y gestionar libros preferidos.
+- **Autenticación Segura**: Firebase Auth con soporte para actualizar nombre, correo y contraseña desde el perfil.
+- **Interfaz Adaptable**: Construida con Jetpack Compose, con soporte completo para temas claro y oscuro.
+- **Subida de Libros**: Permite publicar libros con portada y PDF directamente desde el dispositivo.
 
 ## 🎨 Diseño y Planeación
 
-El diseño de la aplicación, incluyendo wireframes y bocetos (mockups), fue planificado previamente para asegurar una experiencia de usuario intuitiva. Puedes ver el tablero de diseño en Figma aquí:
+El diseño de la aplicación fue planificado previamente en Figma para asegurar una experiencia de usuario intuitiva:
+
 👉 [Diseño en Figma](https://www.figma.com/board/444ZEHDv4oxosiL4jWbU9Q/Sin-t%C3%ADtulo?node-id=0-1&t=S2Q0u9o093LViNNX-1)
 
 ## 🛠️ Arquitectura y Tecnologías
 
-El proyecto sigue las mejores prácticas de desarrollo Android moderno:
+- **Lenguaje**: Kotlin
+- **UI**: Jetpack Compose (Declarative UI) con Material 3
+- **Networking**: Retrofit + OkHttp para la API REST en Azure
+- **Tiempo Real**: SignalR (`microsoft/signalr`) con Foreground Service para persistencia en segundo plano
+- **Imágenes**: Coil para la carga de portadas desde Azure Blob Storage
+- **PDF**: `android-pdf-viewer` para renderizado de documentos
+- **Auth**: Firebase Authentication
+- **CI/CD**: GitHub Actions — genera APK y AAB firmados como artefactos `Biblio-TEC`
 
-- **Lenguaje**: Kotlin.
-- **UI**: Jetpack Compose (Declarative UI).
-- **Networking**: Retrofit para el consumo de la API REST en Azure.
-- **Imágenes**: Coil para la carga eficiente de portadas de libros desde URLs externas.
-- **PDF Core**: `android-pdf-viewer` para una visualización de documentos de alto rendimiento.
-- **Backend-as-a-Service**: Firebase Auth para la gestión de usuarios.
+## 🧩 Arquitectura del Backend (Azure)
 
-## 🧩 Lógica del Proyecto
+La aplicación consume una API en Azure API Management (`librosapi.azure-api.net/v1/`). Los microservicios principales son:
 
-### 1. Conectividad con la API de Azure
-La aplicación se comunica con `https://librosapi.azure-api.net/v1/`. Utiliza una clave de suscripción (`Ocp-Apim-Subscription-Key`) para autenticar las peticiones. Los endpoints principales incluyen:
-- `/categories`: Obtiene la estructura de la biblioteca.
-- `/books`: Lista de libros disponibles con sus metadatos (título, autor, portada, URL del PDF).
-- `/reading-progress`: Sincroniza la página actual del usuario.
-- `/favorites`: Gestiona la lista de libros marcados por el usuario.
+| Servicio | Responsabilidad |
+|---|---|
+| MS-1 | Autenticación y gestión de usuarios |
+| MS-2 | Libros, progreso de lectura, favoritos |
+| MS-3 | Notificaciones en tiempo real (SignalR) |
 
-### 2. Flujo de Lectura
-Cuando un usuario selecciona un libro:
-1. La aplicación verifica si el PDF es remoto (URL).
-2. Se inicia una descarga asíncrona al almacenamiento interno del dispositivo (caché).
-3. Una vez disponible localmente, el `PDFView` renderiza el documento.
-4. Cada vez que el usuario pasa una página, se dispara un evento que actualiza el progreso en la API de Azure de forma transparente.
+Los endpoints principales incluyen:
+- `/books` — Lista y gestión de libros
+- `/reading-progress` — Sincronización de página actual (upsert)
+- `/favorites` — Libros favoritos del usuario
+- `/notifications/negotiate` — Negociación SignalR
 
-### 3. Persistencia Híbrida
-ReadFlow utiliza un sistema de persistencia doble:
-- **Nube**: Para la sincronización entre dispositivos.
-- **Local (SharedPreferences)**: Como backup rápido para una carga instantánea mientras se sincronizan los datos de red.
+## 🔔 Notificaciones en Segundo Plano
+
+Biblio-TEC implementa un `SignalRForegroundService` (tipo `dataSync`) que mantiene la conexión activa aunque el usuario salga de la app. Al regresar, `onResume` reconecta automáticamente si la conexión se perdió, y las notificaciones nuevas se muestran como notificaciones push del sistema.
 
 ## 🌐 Versión Web
 
-Puedes encontrar la versión web de este ecosistema en el siguiente repositorio:
+El ecosistema incluye una versión web complementaria:
+
 👉 [https://github.com/IsmaTEC24/libreria](https://github.com/IsmaTEC24/libreria)
 
 ---
-*Desarrollado como parte del proyecto de diseño de software para lectura digital.*
+*Desarrollado como proyecto de Diseño de Software — IV Semestre.*

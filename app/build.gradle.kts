@@ -42,6 +42,9 @@ android {
             useLegacyPackaging = false
         }
     }
+    lint {
+        disable += "InvalidFragmentVersionForActivityResult"
+    }
 }
 
 dependencies {
