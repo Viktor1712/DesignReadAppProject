@@ -190,7 +190,7 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                     }
                 } else {
                     val continuingBooks = allBooks.filter { book -> 
-                        readingProgress.any { it.bookId == book.id && it.currentPage > 0 } 
+                        readingProgress.any { it.bookId == book.id } 
                     }
                     val userFavIds = favorites.filter { it.userId == userId || it.userId == firebaseUid }.map { it.bookId }
                     val libraryBooks = allBooks.filter { it.id in userFavIds }
@@ -203,9 +203,12 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     items(continuingBooks) { book ->
                                         val progress = readingProgress.find { it.bookId == book.id }
-                                        val fraction = if (progress != null && progress.totalPages > 0) {
-                                            progress.currentPage.toFloat() / progress.totalPages
-                                        } else 0f
+                                        val fraction = when {
+                                            progress == null -> 0f
+                                            progress.percentage > 0 -> progress.percentage.toFloat() / 100f
+                                            progress.totalPages > 0 -> (progress.currentPage + 1).toFloat() / progress.totalPages
+                                            else -> 0.01f // Mínimo progreso si existe el registro
+                                        }
 
                                         ContinueReadingCard(book, fraction) {
                                             openBook(book, scope, context, userId, firebaseUid, navController)
@@ -222,9 +225,12 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                     items(libraryBooks) { book ->
                                         val progress = readingProgress.find { it.bookId == book.id }
-                                        val fraction = if (progress != null && progress.totalPages > 0) {
-                                            progress.currentPage.toFloat() / progress.totalPages
-                                        } else 0f
+                                        val fraction = when {
+                                            progress == null -> 0f
+                                            progress.percentage > 0 -> progress.percentage.toFloat() / 100f
+                                            progress.totalPages > 0 -> (progress.currentPage + 1).toFloat() / progress.totalPages
+                                            else -> 0.01f // Mínimo progreso si existe el registro
+                                        }
                                         
                                         BookLibraryCard(book, fraction) {
                                             openBook(book, scope, context, userId, firebaseUid, navController)

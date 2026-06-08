@@ -62,16 +62,19 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
     }
 
     // Función para guardar progreso en el backend
-    fun saveProgress(p: Int) {
-        if (bookId.isNotEmpty()) {
+    fun saveProgress(p: Int, t: Int = total) {
+        if (bookId.isNotEmpty() && t > 0) {
             scope.launch {
                 try {
+                    // Calculamos el porcentaje basándonos en la página física (p+1)
+                    val perc = (((p + 1).toFloat() / t.toFloat()) * 100).toInt().coerceIn(0, 100)
                     BooksService.updateReadingProgress(
                         com.design.readerapp.ReadingProgress(
                             bookId = bookId,
                             userId = userId,
                             currentPage = p,
-                            totalPages = total
+                            totalPages = t,
+                            percentage = perc
                         )
                     )
                 } catch (_: Exception) {}
@@ -175,7 +178,11 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                                 .enableSwipe(true)
                                 .swipeHorizontal(false)
                                 .enableDoubletap(true)
-                                .onLoad { t -> total = t }
+                                .onLoad { t -> 
+                                    total = t
+                                    // Aseguramos guardar el progreso inicial con el total de páginas ya conocido
+                                    saveProgress(page, t)
+                                }
                                 .onPageChange { p, _ -> 
                                     page = p
                                     if (bookId.isNotEmpty()) {

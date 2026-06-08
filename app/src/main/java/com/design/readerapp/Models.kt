@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class Book(
     @SerializedName("id", alternate = ["_id"]) val id: String? = null,
-    @SerializedName("userId", alternate = ["user_id"]) val userId: String? = null,
+    @SerializedName("user_id", alternate = ["userId"]) val userId: String? = null,
     val title: String = "",
     val author: String = "",
     val description: String? = null,
@@ -47,18 +47,18 @@ data class Category(
 
 data class ReadingProgress(
     @SerializedName("_id", alternate = ["id"]) val id: String? = null,
-    @SerializedName("userId", alternate = ["user_id"]) val userId: String = "",
-    @SerializedName("bookId", alternate = ["book_id"]) val bookId: String = "",
-    @SerializedName("currentPage", alternate = ["current_page"]) val currentPage: Int = 0,
-    @SerializedName("totalPages", alternate = ["total_pages"]) val totalPages: Int = 0,
+    @SerializedName("user_id", alternate = ["userId"]) val userId: String = "",
+    @SerializedName("book_id", alternate = ["bookId"]) val bookId: String = "",
+    @SerializedName("current_page", alternate = ["currentPage"]) val currentPage: Int = 0,
+    @SerializedName("total_pages", alternate = ["totalPages"]) val totalPages: Int = 0,
     val percentage: Int = 0,
-    @SerializedName("updatedAt", alternate = ["updated_at"]) val updatedAt: String? = null
+    @SerializedName("updated_at", alternate = ["updatedAt"]) val updatedAt: String? = null
 )
 
 data class Favorite(
     @SerializedName("_id", alternate = ["id"]) val id: String? = null,
-    @SerializedName("userId", alternate = ["user_id"]) val userId: String = "",
-    @SerializedName("bookId", alternate = ["book_id"]) val bookId: String = ""
+    @SerializedName("user_id", alternate = ["userId"]) val userId: String = "",
+    @SerializedName("book_id", alternate = ["bookId"]) val bookId: String = ""
 )
 
 data class SasUrlResponse(

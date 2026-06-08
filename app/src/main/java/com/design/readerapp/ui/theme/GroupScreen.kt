@@ -181,8 +181,12 @@ fun GroupScreen(
             ) {
                 items(filteredBooks) { book ->
                     val isFav = favorites.any { it.bookId == book.id && (it.userId == userId || it.userId == firebaseUid) }
-                    val progress = readingProgress.find { it.bookId == book.id }?.let { 
-                        if (it.totalPages > 0) it.currentPage.toFloat() / it.totalPages else 0f 
+                    val progress = readingProgress.find { it.bookId == book.id }?.let {
+                        when {
+                            it.percentage > 0 -> it.percentage.toFloat() / 100f
+                            it.totalPages > 0 -> (it.currentPage + 1).toFloat() / it.totalPages
+                            else -> 0.01f
+                        }
                     } ?: 0f
 
                     BookCard(

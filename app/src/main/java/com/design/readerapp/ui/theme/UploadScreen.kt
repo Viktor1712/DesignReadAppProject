@@ -153,13 +153,16 @@ fun UploadScreen(navController: NavController) {
                             }
                             
                             // 3. Registrar en la base de datos
+                            val currentUserId = BooksService.currentUser?.id
+                            if (currentUserId == null) throw Exception("Usuario no autenticado en BooksService")
+                            
                             BooksService.createBook(Book(
                                 title = title,
                                 author = author,
                                 category = category,
                                 pdfBlobName = pdfSas.blobName,
                                 coverBlobName = coverSas.blobName,
-                                userId = BooksService.currentUser?.id
+                                userId = currentUserId
                             ))
                             
                             Toast.makeText(context, "¡Libro y portada subidos con éxito!", Toast.LENGTH_SHORT).show()
