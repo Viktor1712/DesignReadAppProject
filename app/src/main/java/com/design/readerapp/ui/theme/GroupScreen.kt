@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,6 +53,16 @@ fun GroupScreen(
     var selectedBook by remember { mutableStateOf<Book?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredBooks = remember(books, searchQuery) {
+        if (searchQuery.isBlank()) books
+        else books.filter { 
+            it.title.contains(searchQuery, ignoreCase = true) || 
+            it.author.contains(searchQuery, ignoreCase = true) ||
+            it.category.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
     fun loadData() {
         scope.launch {
@@ -75,6 +87,9 @@ fun GroupScreen(
                     "mis-libros" -> {
                         // Verificamos tanto el ID interno como el Firebase UID para mayor robustez
                         allBooks.filter { it.userId == userId || it.userId == firebaseUid }
+                    }
+                    "explorar" -> {
+                        allBooks
                     }
                     else -> {
                         allBooks.filter { it.category.equals(groupName, ignoreCase = true) }
@@ -119,6 +134,28 @@ fun GroupScreen(
                     }
                 },
                 actions = {
+                    if (groupName.lowercase() == "explorar") {
+                        var isSearching by remember { mutableStateOf(false) }
+                        if (isSearching) {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text("Buscar...") },
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent
+                                ),
+                                singleLine = true
+                            )
+                            IconButton(onClick = { isSearching = false; searchQuery = "" }) {
+                                Icon(Icons.Default.Close, null, tint = AzureText)
+                            }
+                        } else {
+                            IconButton(onClick = { isSearching = true }) {
+                                Icon(Icons.Default.Search, null, tint = AzureText)
+                            }
+                        }
+                    }
                     IconButton(onClick = onThemeToggle) {
                         Text(if (darkTheme) "☀️" else "🌙", fontSize = 20.sp)
                     }
@@ -139,7 +176,7 @@ fun GroupScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(books) { book ->
+                items(filteredBooks) { book ->
                     val isFav = favorites.any { it.bookId == book.id && (it.userId == userId || it.userId == firebaseUid) }
                     val progress = readingProgress.find { it.bookId == book.id }?.let { 
                         if (it.totalPages > 0) it.currentPage.toFloat() / it.totalPages else 0f 
@@ -214,6 +251,38 @@ fun GroupScreen(
                         }
                     }
                 )
+                
+                if (selectedBook?.userId == userId || selectedBook?.userId == firebaseUid) {
+                    HorizontalDivider(color = AzureBorder, modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    ListItem(
+                        headlineContent = { Text("Editar Libro") },
+                        leadingContent = { Text("✏️", fontSize = 20.sp) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                        modifier = Modifier.clickable {
+                            showMenu = false
+                            navController.navigate("edit-book/${selectedBook?.id}")
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Eliminar Libro") },
+                        leadingContent = { Text("🗑️", fontSize = 20.sp) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent, headlineColor = Color.Red),
+                        modifier = Modifier.clickable {
+                            scope.launch {
+                                try {
+                                    selectedBook?.id?.let { BooksService.deleteBook(it) }
+                                    loadData()
+                                    showMenu = false
+                                    Toast.makeText(context, "Libro eliminado", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Error al eliminar: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     }

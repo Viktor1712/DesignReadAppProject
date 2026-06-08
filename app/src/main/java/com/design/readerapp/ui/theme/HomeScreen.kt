@@ -81,7 +81,15 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                 DrawerItem("Mi Biblioteca", Icons.AutoMirrored.Filled.MenuBook) { 
                     navController.navigate("group/mis-libros")
                 }
-                DrawerItem("Comunidad", Icons.Default.Public) { }
+                DrawerItem("Comunidad", Icons.Default.Public) { 
+                    navController.navigate("group/explorar")
+                }
+                DrawerItem("Notificaciones", Icons.Default.Notifications) {
+                    navController.navigate("notifications")
+                }
+                DrawerItem("Mi Perfil", Icons.Default.Person) {
+                    navController.navigate("profile")
+                }
                 DrawerItem("Favoritos", Icons.Default.Favorite) { 
                     navController.navigate("group/favoritos")
                 }
@@ -179,10 +187,14 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                         }
 
                         item {
-                            SectionHeader("Recomendados", "Descubrir") { }
+                            SectionHeader("Recomendados", "Descubrir") { 
+                                navController.navigate("group/explorar")
+                            }
                             Spacer(Modifier.height(16.dp))
                             Card(
-                                modifier = Modifier.fillMaxWidth().height(100.dp),
+                                modifier = Modifier.fillMaxWidth().height(100.dp).clickable {
+                                    navController.navigate("group/explorar")
+                                },
                                 colors = CardDefaults.cardColors(containerColor = AzureSurface),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
                             ) {

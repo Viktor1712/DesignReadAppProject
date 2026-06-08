@@ -48,6 +48,9 @@ interface BooksApiService {
     @POST("users")
     suspend fun createUser(@Body user: User): User
 
+    @PUT("users/{id}")
+    suspend fun updateUser(@Path("id") id: String, @Body user: User): User
+
     // Reading Progress (MS-2)
     @GET("reading-progress")
     suspend fun getReadingProgress(): List<ReadingProgress>
@@ -148,6 +151,7 @@ object BooksService {
     suspend fun getUsers() = api.getUsers()
     suspend fun getUserById(id: String) = api.getUserById(id)
     suspend fun createUser(user: User) = api.createUser(user)
+    suspend fun updateUser(id: String, user: User) = api.updateUser(id, user)
     
     suspend fun getCategories(): List<Category> {
         // Sincronizado con la web: Datos hardcoded para evitar 404 del backend

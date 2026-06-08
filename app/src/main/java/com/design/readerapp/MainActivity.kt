@@ -146,6 +146,22 @@ fun MyApp(incomingPdf: Uri?, darkTheme: Boolean, onThemeToggle: () -> Unit) {
             UploadScreen(navController)
         }
 
+        composable("profile") {
+            ProfileScreen(navController)
+        }
+
+        composable("notifications") {
+            NotificationsScreen(navController)
+        }
+
+        composable(
+            route = "edit-book/{bookId}",
+            arguments = listOf(navArgument("bookId") { type = NavType.StringType })
+        ) {
+            val bookId = it.arguments?.getString("bookId") ?: ""
+            EditBookScreen(navController, bookId)
+        }
+
         composable("group/{name}") {
             val name = it.arguments?.getString("name") ?: ""
             GroupScreen(navController, name, darkTheme, onThemeToggle)

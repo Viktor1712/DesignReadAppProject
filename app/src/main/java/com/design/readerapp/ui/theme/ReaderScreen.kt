@@ -22,6 +22,7 @@ import com.github.barteksc.pdfviewer.PDFView
 import com.design.readerapp.BooksService
 import com.design.readerapp.ReaderState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
 import okhttp3.Response
@@ -31,6 +32,7 @@ import java.io.FileOutputStream
 @Composable
 fun ReaderScreen(navController: NavController, bookId: String = "") {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val userId = BooksService.currentUser?.id ?: ""
     val pdfUri = ReaderState.currentPdf
 
@@ -43,7 +45,39 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
     
     val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
     val key = "page_${userId}_${bookId}"
-    val savedPage = remember { prefs.getInt(key, 0) }
+    // Intentamos obtener el progreso inicial del backend si bookId no está vacío
+    var initialPage by remember { mutableIntStateOf(prefs.getInt(key, 0)) }
+
+    LaunchedEffect(bookId) {
+        if (bookId.isNotEmpty()) {
+            try {
+                val progress = BooksService.getReadingProgress()
+                val bookProgress = progress.find { it.bookId == bookId }
+                bookProgress?.let {
+                    initialPage = it.currentPage
+                    prefs.edit().putInt(key, it.currentPage).apply()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    // Función para guardar progreso en el backend
+    fun saveProgress(p: Int) {
+        if (bookId.isNotEmpty()) {
+            scope.launch {
+                try {
+                    BooksService.updateReadingProgress(
+                        com.design.readerapp.ReadingProgress(
+                            bookId = bookId,
+                            userId = userId,
+                            currentPage = p,
+                            totalPages = total
+                        )
+                    )
+                } catch (_: Exception) {}
+            }
+        }
+    }
 
     LaunchedEffect(pdfUri) {
         if (pdfUri == null) {
@@ -137,7 +171,7 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                     factory = { ctx ->
                         PDFView(ctx, null).apply {
                             fromFile(localPdfFile)
-                                .defaultPage(savedPage)
+                                .defaultPage(initialPage)
                                 .enableSwipe(true)
                                 .swipeHorizontal(false)
                                 .enableDoubletap(true)
@@ -146,6 +180,7 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                                     page = p
                                     if (bookId.isNotEmpty()) {
                                         prefs.edit().putInt(key, p).apply()
+                                        saveProgress(p)
                                     }
                                 }
                                 .onTap { showUI = !showUI; true }
