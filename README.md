@@ -11,6 +11,11 @@
 - **Autenticación**: Integración con Firebase para un acceso seguro de los usuarios.
 - **Interfaz Moderna**: Construida totalmente con **Jetpack Compose**, soportando temas claros y oscuros.
 
+## 🎨 Diseño y Planeación
+
+El diseño de la aplicación, incluyendo wireframes y bocetos (mockups), fue planificado previamente para asegurar una experiencia de usuario intuitiva. Puedes ver el tablero de diseño en Figma aquí:
+👉 [Diseño en Figma](https://www.figma.com/board/444ZEHDv4oxosiL4jWbU9Q/Sin-t%C3%ADtulo?node-id=0-1&t=S2Q0u9o093LViNNX-1)
+
 ## 🛠️ Arquitectura y Tecnologías
 
 El proyecto sigue las mejores prácticas de desarrollo Android moderno:
