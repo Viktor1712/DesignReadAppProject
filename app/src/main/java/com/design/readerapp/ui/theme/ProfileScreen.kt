@@ -2,8 +2,10 @@ package com.design.readerapp.ui.theme
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -18,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.design.readerapp.BooksService
-import com.design.readerapp.User
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,16 +34,16 @@ fun ProfileScreen(navController: NavController) {
     var isSaving by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = AzureBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Mi Perfil", fontWeight = FontWeight.Bold, color = AzureText) },
+            TopAppBar(
+                title = { Text("Configuración de Perfil", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = AzureText)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = AzureBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { padding ->
@@ -50,56 +51,93 @@ fun ProfileScreen(navController: NavController) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 20.dp)
         ) {
-            // Avatar temporal con iniciales
+            // Header con Banner y Avatar
             Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(AzureBlue),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .padding(vertical = 16.dp)
             ) {
-                Text(
-                    text = currentUser?.initials ?: (if (name.isNotEmpty()) name.take(1).uppercase() else "U"),
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                // "Banner" decorativo
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                 )
+                
+                // Avatar centrado que sobresale
+                Surface(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .align(Alignment.BottomCenter),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(4.dp, MaterialTheme.colorScheme.background)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = currentUser?.initials ?: (if (name.isNotEmpty()) name.take(1).uppercase() else "U"),
+                            fontSize = 40.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
-            
+
             Text(
-                text = currentUser?.email ?: "",
-                color = AzureTextSecondary,
+                text = currentUser?.email ?: "usuario@ejemplo.com",
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
             
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(24.dp))
             
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nombre Completo") },
+            // Secciones de configuración
+            Text("DETALLES DE LA CUENTA", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+            
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AzureBlue,
-                    unfocusedBorderColor = AzureBorder
-                )
-            )
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ProfileInputField("Nombre completo", name) { name = it }
+                    ProfileInputField("Nombre de usuario", username) { username = it }
+                }
+            }
+
+            Spacer(Modifier.height(24.dp))
             
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Nombre de usuario") },
+            Text("PREFERENCIAS", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
+            
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AzureBlue,
-                    unfocusedBorderColor = AzureBorder
-                )
-            )
-            
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Notificaciones", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                        Text("Recibir alertas de nuevos libros", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                    }
+                    Switch(checked = true, onCheckedChange = {}, colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary, checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)))
+                }
+            }
+
             Spacer(Modifier.weight(1f))
             
             Button(
@@ -111,7 +149,7 @@ fun ProfileScreen(navController: NavController) {
                                 val updatedUser = currentUser.copy(name = name, username = username)
                                 val response = BooksService.updateUser(currentUser.id, updatedUser)
                                 BooksService.currentUser = response.copy(firebaseUid = currentUser.firebaseUid)
-                                Toast.makeText(context, "Perfil actualizado", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Perfil actualizado correctamente", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                             } finally {
@@ -120,16 +158,40 @@ fun ProfileScreen(navController: NavController) {
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp).padding(bottom = 0.dp),
                 enabled = !isSaving,
-                colors = ButtonDefaults.buttonColors(containerColor = AzureBlue)
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Guardar Cambios")
+                    Text("GUARDAR CAMBIOS", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                 }
             }
+            Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+fun ProfileInputField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                cursorColor = MaterialTheme.colorScheme.primary
+            ),
+            singleLine = true
+        )
     }
 }

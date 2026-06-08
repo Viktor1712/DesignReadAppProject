@@ -55,20 +55,23 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
             readingProgress = try { BooksService.getReadingProgress() } catch (e: Exception) { emptyList() }
             favorites = try { BooksService.getFavorites() } catch (e: Exception) { emptyList() }
             
-            // Cargar portadas para todos los libros visibles
-            val userFavIds = favorites.filter { it.userId == userId || it.userId == firebaseUid }.map { it.bookId }
-            val booksToLoad = allBooks.filter { book -> 
-                readingProgress.any { it.bookId == book.id } || book.id in userFavIds
-            }
-
-            booksToLoad.forEach { book ->
-                launch {
-                    try {
-                        val sas = BooksService.getBookCoverUrl(book.id!!, userId.ifBlank { firebaseUid })
-                        allBooks = allBooks.map { 
-                            if (it.id == book.id) it.copy(coverUrl = sas.url) else it 
+            // Cargar portadas para todos los libros que no la tengan
+            allBooks.forEach { book ->
+                if (book.coverUrl.isNullOrBlank() && !book.id.isNullOrBlank()) {
+                    launch {
+                        try {
+                            val sas = BooksService.getBookCoverUrl(book.id, userId.ifBlank { firebaseUid })
+                            if (sas.url.isNotBlank()) {
+                                // Actualizar el estado de la lista de libros con la nueva URL
+                                allBooks = allBooks.map { 
+                                    if (it.id == book.id) it.copy(coverUrl = sas.url) else it 
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Si falla por ID (ej. es un book de MS-1 pero pide progreso a MS-2)
+                            // El interceptor ya maneja la mayoría, pero imprimimos para debug si es necesario
                         }
-                    } catch (_: Exception) {}
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -308,20 +311,23 @@ fun BookLibraryCard(book: Book, progress: Float, onClick: () -> Unit) {
     Card(
         modifier = Modifier.width(120.dp).clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = AzureSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
     ) {
         Column {
             Box {
                 AsyncImage(
                     model = book.coverUrl,
-                    contentDescription = null,
+                    contentDescription = book.title,
                     modifier = Modifier.fillMaxWidth().height(160.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    error = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
+                    placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_gallery)
                 )
                 if (progress > 0) {
                     LinearProgressIndicator(
                         progress = { progress },
-                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp),
                         color = AzureBlue,
                         trackColor = Color.Transparent
                     )
@@ -364,24 +370,27 @@ fun ContinueReadingCard(book: Book, progress: Float, onClick: () -> Unit) {
     Card(
         modifier = Modifier.width(160.dp).clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = AzureSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBlue.copy(alpha = 0.5f))
     ) {
         Column {
             AsyncImage(
                 model = book.coverUrl,
-                contentDescription = null,
+                contentDescription = book.title,
                 modifier = Modifier.fillMaxWidth().height(200.dp),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                error = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_report_image),
+                placeholder = androidx.compose.ui.res.painterResource(android.R.drawable.ic_menu_gallery)
             )
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(4.dp),
+                modifier = Modifier.fillMaxWidth().height(6.dp),
                 color = AzureBlue,
                 trackColor = AzureBorder
             )
-            Column(Modifier.padding(8.dp)) {
-                Text(book.title, color = AzureText, fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 14.sp)
-                Text("${(progress * 100).toInt()}% completado", color = AzureTextSecondary, fontSize = 12.sp)
+            Column(Modifier.padding(12.dp)) {
+                Text(book.title, color = AzureText, fontWeight = FontWeight.ExtraBold, maxLines = 1, fontSize = 14.sp)
+                Text("${(progress * 100).toInt()}% completado", color = AzureBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
     }

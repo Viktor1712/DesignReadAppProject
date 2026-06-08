@@ -11,6 +11,13 @@ val AzureText = Color(0xFFF8FAFC) // Slate 50
 val AzureTextSecondary = Color(0xFF94A3B8) // Slate 400
 val AzureDark = Color(0xFF020817)
 
+// Colores para Modo Claro (Shadcn Light style)
+val AzureLightBackground = Color(0xFFFFFFFF)
+val AzureLightSurface = Color(0xFFF1F5F9) // Slate 100
+val AzureLightBorder = Color(0xFFE2E8F0) // Slate 200
+val AzureLightText = Color(0xFF0F172A) // Slate 900
+val AzureLightTextSecondary = Color(0xFF64748B) // Slate 500
+
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)

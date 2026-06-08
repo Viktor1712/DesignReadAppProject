@@ -3,13 +3,10 @@ package com.design.readerapp.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -17,26 +14,30 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = AzureBlue,
-    onPrimary = AzureText,
+    onPrimary = Color.White,
     secondary = AzureBlue,
-    onSecondary = AzureText,
+    onSecondary = Color.White,
     tertiary = AzureBlue,
     background = AzureBackground,
     surface = AzureSurface,
+    outline = AzureBorder,
     onBackground = AzureText,
-    onSurface = AzureText
+    onSurface = AzureText,
+    onSurfaceVariant = AzureTextSecondary
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = AzureBlue,
-    onPrimary = AzureText,
+    onPrimary = Color.White,
     secondary = AzureBlue,
-    onSecondary = AzureText,
+    onSecondary = Color.White,
     tertiary = AzureBlue,
-    background = AzureText,
-    surface = AzureText,
-    onBackground = AzureDark,
-    onSurface = AzureDark
+    background = AzureLightBackground,
+    surface = AzureLightSurface,
+    outline = AzureLightBorder,
+    onBackground = AzureLightText,
+    onSurface = AzureLightText,
+    onSurfaceVariant = AzureLightTextSecondary
 )
 
 @Composable

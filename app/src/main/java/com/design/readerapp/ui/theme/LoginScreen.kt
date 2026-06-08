@@ -92,7 +92,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             Surface(
                 modifier = Modifier.size(100.dp),
                 shape = MaterialTheme.shapes.medium,
-                color = AzureBlue.copy(alpha = 0.1f)
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text("📚", fontSize = 48.sp)
@@ -105,7 +105,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 text = "BIBLIO-TEC",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = AzureBlue
+                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -131,7 +131,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -149,13 +155,19 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
             
             Spacer(modifier = Modifier.height(32.dp))
             
             if (isLoading) {
-                CircularProgressIndicator(color = AzureBlue)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
                 Button(
                     onClick = { scope.launch { handleAuth() } },
@@ -163,7 +175,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                         .fillMaxWidth()
                         .height(56.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AzureBlue)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(
                         if (isRegister) "Registrarse" else "Iniciar Sesión",
@@ -177,7 +189,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 TextButton(onClick = { isRegister = !isRegister }) {
                     Text(
                         text = if (isRegister) "¿Ya tienes cuenta? Inicia sesión" else "¿No tienes cuenta? Regístrate gratis",
-                        color = AzureBlue
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

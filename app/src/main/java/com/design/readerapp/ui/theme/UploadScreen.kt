@@ -4,16 +4,27 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.design.readerapp.Book
 import com.design.readerapp.BooksService
 import kotlinx.coroutines.Dispatchers
@@ -48,68 +59,96 @@ fun UploadScreen(navController: NavController) {
     )
 
     Scaffold(
+        containerColor = AzureBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Subir Libro") },
+                title = { Text("Subir Nuevo Libro", fontWeight = FontWeight.Bold, color = AzureText, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Text("⬅️")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = AzureText)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = AzureBackground)
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
-                .padding(16.dp)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(AzureBackground)
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Título") },
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                "DETALLES DEL LIBRO", 
+                fontSize = 12.sp, 
+                fontWeight = FontWeight.Bold, 
+                color = AzureBlue, 
+                modifier = Modifier.padding(start = 4.dp)
             )
-            OutlinedTextField(
-                value = author,
-                onValueChange = { author = it },
-                label = { Text("Autor") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = category,
-                onValueChange = { category = it },
-                label = { Text("Categoría (e.g. fantasia)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = { pdfPicker.launch("application/pdf") },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(if (pdfUri == null) "Seleccionar PDF" else "PDF Seleccionado")
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = AzureSurface),
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    UploadInputField("Título del libro", title) { title = it }
+                    UploadInputField("Autor", author) { author = it }
+                    UploadInputField("Categoría (fantasía, drama, etc.)", category) { category = it }
                 }
-                
-                Button(
-                    onClick = { imagePicker.launch("image/*") },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(if (imageUri == null) "Seleccionar Portada" else "Portada Seleccionada")
-                }
-            }
-            
-            if (pdfUri != null) {
-                Text("Archivo PDF: ${pdfUri?.lastPathSegment}", style = MaterialTheme.typography.bodySmall)
-            }
-            if (imageUri != null) {
-                Text("Portada: ${imageUri?.lastPathSegment}", style = MaterialTheme.typography.bodySmall)
             }
 
-            Spacer(Modifier.height(24.dp))
+            Text(
+                "ARCHIVOS Y MEDIA", 
+                fontSize = 12.sp, 
+                fontWeight = FontWeight.Bold, 
+                color = AzureBlue, 
+                modifier = Modifier.padding(start = 4.dp)
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // PDF Selector Card
+                FileSelectorCard(
+                    title = if (pdfUri == null) "Seleccionar PDF" else "PDF Cargado",
+                    subtitle = pdfUri?.lastPathSegment ?: "El archivo principal de lectura",
+                    icon = "📄",
+                    onClick = { pdfPicker.launch("application/pdf") },
+                    isSelected = pdfUri != null
+                )
+
+                // Image Selector Card
+                FileSelectorCard(
+                    title = if (imageUri == null) "Seleccionar Portada" else "Portada Cargada",
+                    subtitle = imageUri?.lastPathSegment ?: "Imagen JPG/PNG para la biblioteca",
+                    icon = "🖼️",
+                    onClick = { imagePicker.launch("image/*") },
+                    isSelected = imageUri != null
+                )
+            }
+            
+            if (imageUri != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = AzureSurface),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+                ) {
+                    Box(modifier = Modifier.height(200.dp).fillMaxWidth()) {
+                        AsyncImage(
+                            model = imageUri,
+                            contentDescription = "Vista previa",
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.weight(1f))
 
             Button(
                 onClick = {
@@ -174,14 +213,79 @@ fun UploadScreen(navController: NavController) {
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isUploading
+                modifier = Modifier.fillMaxWidth().height(50.dp).padding(bottom = 0.dp),
+                enabled = !isUploading,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AzureBlue)
             ) {
                 if (isUploading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text("Subir y Publicar")
+                    Text("SUBIR Y PUBLICAR", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                 }
+            }
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun UploadInputField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, fontSize = 12.sp, color = AzureTextSecondary, fontWeight = FontWeight.Medium)
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = AzureText),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = AzureBlue,
+                unfocusedBorderColor = AzureBorder,
+                focusedContainerColor = AzureBackground,
+                unfocusedContainerColor = AzureBackground,
+                cursorColor = AzureBlue
+            ),
+            singleLine = true
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FileSelectorCard(title: String, subtitle: String, icon: String, onClick: () -> Unit, isSelected: Boolean) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AzureSurface),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) AzureBlue else AzureBorder)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(8.dp),
+                color = if (isSelected) AzureBlue.copy(alpha = 0.1f) else AzureBackground
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(icon, fontSize = 20.sp)
+                }
+            }
+            
+            Spacer(Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, color = if (isSelected) AzureBlue else AzureText, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(subtitle, color = AzureTextSecondary, fontSize = 12.sp, maxLines = 1)
+            }
+            
+            if (isSelected) {
+                Text("✅", fontSize = 16.sp)
+            } else {
+                Text("📁", fontSize = 16.sp, color = AzureTextSecondary)
             }
         }
     }

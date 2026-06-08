@@ -6,6 +6,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
@@ -77,7 +78,12 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                             percentage = perc
                         )
                     )
-                } catch (_: Exception) {}
+                    // También guardamos localmente
+                    prefs.edit().putInt(key, p).apply()
+                    android.widget.Toast.makeText(context, "Progreso guardado: Página ${p + 1}", android.widget.Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(context, "Error al guardar progreso", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -154,6 +160,34 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                     }
                 )
             }
+        },
+        bottomBar = {
+            if (showUI && total > 0) {
+                BottomAppBar(
+                    containerColor = Color.Black.copy(alpha = 0.8f),
+                    modifier = Modifier.height(70.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Página ${page + 1} de $total",
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+                        
+                        Button(
+                            onClick = { saveProgress(page, total) },
+                            colors = ButtonDefaults.buttonColors(containerColor = AzureBlue),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Guardar Progreso")
+                        }
+                    }
+                }
+            }
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().background(Color.Black).padding(padding)) {
@@ -180,19 +214,17 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                                 .enableDoubletap(true)
                                 .onLoad { t -> 
                                     total = t
-                                    // Aseguramos guardar el progreso inicial con el total de páginas ya conocido
-                                    saveProgress(page, t)
                                 }
                                 .onPageChange { p, _ -> 
                                     page = p
-                                    if (bookId.isNotEmpty()) {
-                                        prefs.edit().putInt(key, p).apply()
-                                        saveProgress(p)
-                                    }
                                 }
                                 .onTap { showUI = !showUI; true }
                                 .load()
                         }
+                    },
+                    update = { pdfView ->
+                        // Si cambia initialPage externamente, podríamos forzar el salto, 
+                        // pero aquí PDFView maneja su propio estado interno.
                     }
                 )
             }

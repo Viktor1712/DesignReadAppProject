@@ -3,31 +3,31 @@ package com.design.readerapp
 import com.google.gson.annotations.SerializedName
 
 data class Book(
-    @SerializedName("id", alternate = ["_id"]) val id: String? = null,
-    @SerializedName("user_id", alternate = ["userId"]) val userId: String? = null,
+    @SerializedName("id", alternate = ["_id", "ID", "bookId", "book_id"]) val id: String? = null,
+    @SerializedName("user_id", alternate = ["userId", "ownerId", "owner_id"]) val userId: String? = null,
     val title: String = "",
     val author: String = "",
     val description: String? = null,
     val category: String = "",
     val language: String? = "es",
-    @SerializedName("currentStatus", alternate = ["current_status"]) val currentStatus: String? = "activo",
-    @SerializedName("isPublic", alternate = ["is_public"]) val isPublic: Boolean = true,
-    @SerializedName("pdf_blob_name", alternate = ["pdfBlobName"]) val pdfBlobName: String? = null,
-    @SerializedName("cover_blob_name", alternate = ["coverBlobName"]) val coverBlobName: String? = null,
-    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("currentStatus", alternate = ["current_status", "status"]) val currentStatus: String? = "activo",
+    @SerializedName("isPublic", alternate = ["is_public", "public"]) val isPublic: Boolean = true,
+    @SerializedName("pdf_blob_name", alternate = ["pdfBlobName", "pdf_blob"]) val pdfBlobName: String? = null,
+    @SerializedName("cover_blob_name", alternate = ["coverBlobName", "cover_blob"]) val coverBlobName: String? = null,
+    @SerializedName("created_at", alternate = ["createdAt"]) val createdAt: String? = null,
     
-    // Virtual fields for UI
-    var coverUrl: String? = null,
-    var fileUrl: String? = null
+    // Virtual fields for UI (or provided by backend in some endpoints)
+    @SerializedName("cover_url", alternate = ["coverUrl", "image", "thumbnail", "cover", "imageUrl", "image_url", "portrait"]) var coverUrl: String? = null,
+    @SerializedName("file_url", alternate = ["fileUrl", "pdf_url", "url", "pdfUrl"]) var fileUrl: String? = null
 )
 
 data class User(
-    @SerializedName("_id", alternate = ["id"]) val id: String? = null,
+    @SerializedName("id", alternate = ["_id", "uid", "userId"]) val id: String? = null,
     val username: String = "",
-    @SerializedName("name", alternate = ["full_name"]) val name: String = "",
+    @SerializedName("name", alternate = ["full_name", "fullName", "displayName"]) val name: String = "",
     val email: String = "",
     val initials: String? = null,
-    @SerializedName("firebaseUid", alternate = ["firebase_uid"]) val firebaseUid: String? = null
+    @SerializedName("firebaseUid", alternate = ["firebase_uid", "firebase_id"]) val firebaseUid: String? = null
 )
 
 data class AuthResponse(
@@ -46,13 +46,13 @@ data class Category(
 )
 
 data class ReadingProgress(
-    @SerializedName("_id", alternate = ["id"]) val id: String? = null,
-    @SerializedName("user_id", alternate = ["userId"]) val userId: String = "",
-    @SerializedName("book_id", alternate = ["bookId"]) val bookId: String = "",
-    @SerializedName("current_page", alternate = ["currentPage"]) val currentPage: Int = 0,
-    @SerializedName("total_pages", alternate = ["totalPages"]) val totalPages: Int = 0,
+    @SerializedName("id", alternate = ["_id"]) val id: String? = null,
+    @SerializedName("userId", alternate = ["user_id"]) val userId: String = "",
+    @SerializedName("bookId", alternate = ["book_id"]) val bookId: String = "",
+    @SerializedName("currentPage", alternate = ["current_page"]) val currentPage: Int = 0,
+    @SerializedName("totalPages", alternate = ["total_pages"]) val totalPages: Int = 0,
     val percentage: Int = 0,
-    @SerializedName("updated_at", alternate = ["updatedAt"]) val updatedAt: String? = null
+    @SerializedName("updatedAt", alternate = ["updated_at"]) val updatedAt: String? = null
 )
 
 data class Favorite(
@@ -62,7 +62,7 @@ data class Favorite(
 )
 
 data class SasUrlResponse(
-    @SerializedName("url", alternate = ["uploadUrl", "sasUrl", "sas_url", "pdfUrl", "fileUrl"]) val url: String,
+    @SerializedName("url", alternate = ["uploadUrl", "sasUrl", "sas_url", "pdfUrl", "fileUrl", "coverUrl", "cover_url"]) val url: String,
     val blobName: String? = null
 )
 
