@@ -84,13 +84,13 @@ data class SignalRConnection(
 )
 
 data class Notification(
-    val id: Int,
-    val recipientUserId: String,
-    val actorUserId: String,
-    val actorName: String,
-    val bookId: String?,
-    val type: String,
-    val message: String,
-    val isRead: Boolean,
-    val createdAt: String
+    val id: String? = null,
+    val recipientUserId: String = "",
+    val actorUserId: String = "",
+    val actorName: String = "",
+    val bookId: String? = null,
+    val type: String = "",
+    val message: String = "",
+    val isRead: Boolean = false,
+    val createdAt: String = ""
 )

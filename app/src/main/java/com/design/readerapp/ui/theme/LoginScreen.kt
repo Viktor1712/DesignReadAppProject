@@ -46,9 +46,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         try {
             isLoading = true
             val authResult = if (isRegister) {
-                firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+                firebaseAuth.createUserWithEmailAndPassword(email.trim(), password.trim()).await()
             } else {
-                firebaseAuth.signInWithEmailAndPassword(email, password).await()
+                firebaseAuth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
             }
             
             val user = authResult.user

@@ -43,11 +43,11 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
     var isLoadingPdf by remember { mutableStateOf(false) }
     var localPdfFile by remember { mutableStateOf<File?>(null) }
     var errorLoading by remember { mutableStateOf<String?>(null) }
-    
+
     val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
     val key = "page_${userId}_${bookId}"
-    // Intentamos obtener el progreso inicial del backend si bookId no está vacío
     var initialPage by remember { mutableIntStateOf(prefs.getInt(key, 0)) }
+    var savedPage by remember { mutableIntStateOf(initialPage) }
 
     LaunchedEffect(bookId) {
         if (bookId.isNotEmpty()) {
@@ -62,12 +62,14 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
         }
     }
 
-    // Función para guardar progreso en el backend
+    val progressFloat = if (total > 0) (page + 1).toFloat() / total.toFloat() else 0f
+    val progressPercent = (progressFloat * 100).toInt().coerceIn(0, 100)
+    val hasUnsavedChanges = page != savedPage
+
     fun saveProgress(p: Int, t: Int = total) {
         if (bookId.isNotEmpty() && t > 0) {
             scope.launch {
                 try {
-                    // Calculamos el porcentaje basándonos en la página física (p+1)
                     val perc = (((p + 1).toFloat() / t.toFloat()) * 100).toInt().coerceIn(0, 100)
                     BooksService.updateReadingProgress(
                         com.design.readerapp.ReadingProgress(
@@ -78,8 +80,8 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                             percentage = perc
                         )
                     )
-                    // También guardamos localmente
                     prefs.edit().putInt(key, p).apply()
+                    savedPage = p
                     android.widget.Toast.makeText(context, "Progreso guardado: Página ${p + 1}", android.widget.Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     android.widget.Toast.makeText(context, "Error al guardar progreso", android.widget.Toast.LENGTH_SHORT).show()
@@ -165,25 +167,55 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
             if (showUI && total > 0) {
                 BottomAppBar(
                     containerColor = Color.Black.copy(alpha = 0.8f),
-                    modifier = Modifier.height(70.dp)
+                    modifier = Modifier.wrapContentHeight()
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "Página ${page + 1} de $total",
-                            color = Color.White,
-                            fontSize = 14.sp
+                        LinearProgressIndicator(
+                            progress = { progressFloat },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = AzureBlue,
+                            trackColor = Color.White.copy(alpha = 0.2f)
                         )
-                        
-                        Button(
-                            onClick = { saveProgress(page, total) },
-                            colors = ButtonDefaults.buttonColors(containerColor = AzureBlue),
-                            shape = RoundedCornerShape(8.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Guardar Progreso")
+                            Text(
+                                text = "$progressPercent% completado",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 12.sp
+                            )
+                            if (hasUnsavedChanges) {
+                                Text(
+                                    text = "Cambios sin guardar",
+                                    color = Color(0xFFFFCC44),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Página ${page + 1} de $total",
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                            Button(
+                                onClick = { saveProgress(page, total) },
+                                colors = ButtonDefaults.buttonColors(containerColor = AzureBlue),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Guardar Progreso")
+                            }
                         }
                     }
                 }

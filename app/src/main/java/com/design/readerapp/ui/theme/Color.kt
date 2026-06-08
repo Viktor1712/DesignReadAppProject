@@ -2,26 +2,40 @@ package com.design.readerapp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta "Brave Sea" / Shadcn Dark
-val AzureBlue = Color(0xFF3B82F6) // Blue 500
-val AzureBackground = Color(0xFF020817) // Slate 950
-val AzureSurface = Color(0xFF0F172A) // Slate 900
-val AzureBorder = Color(0xFF1E293B) // Slate 800
-val AzureText = Color(0xFFF8FAFC) // Slate 50
-val AzureTextSecondary = Color(0xFF94A3B8) // Slate 400
-val AzureDark = Color(0xFF020817)
+// ── Paleta cálida — coincide con la web (main.css) ──────────────────────────
 
-// Colores para Modo Claro (Shadcn Light style)
-val AzureLightBackground = Color(0xFFFFFFFF)
-val AzureLightSurface = Color(0xFFF1F5F9) // Slate 100
-val AzureLightBorder = Color(0xFFE2E8F0) // Slate 200
-val AzureLightText = Color(0xFF0F172A) // Slate 900
-val AzureLightTextSecondary = Color(0xFF64748B) // Slate 500
+// Light mode
+val WarmBackground     = Color(0xFFF5F0E8)   // --bg
+val WarmSurface        = Color(0xFFFDFAF5)   // --surface
+val WarmSurfaceSoft    = Color(0xFFEDE8DC)   // --surface-soft
+val WarmSurfaceWarm    = Color(0xFFE8E0D0)   // --surface-warm
+val WarmText           = Color(0xFF1C1714)   // --text
+val WarmTextSoft       = Color(0xFF8C7B6B)   // --text-soft / --muted
+val WarmBorder         = Color(0xFFD9CFC0)   // --border
+val WarmPrimary        = Color(0xFF7C6A52)   // --primary / --accent
+val WarmPrimaryHover   = Color(0xFF5E5040)   // --primary-hover
+val WarmAccentDark     = Color(0xFF3D2B1F)   // --accent-dark (button fill)
+val WarmSuccess        = Color(0xFF5C8C6B)   // --success
+val WarmDanger         = Color(0xFFC0624E)   // --danger
+val WarmDangerHover    = Color(0xFFA0503E)   // --danger-hover
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Dark mode
+val WarmDarkBackground = Color(0xFF1A1512)   // --bg dark
+val WarmDarkSurface    = Color(0xFF231E1A)   // --surface dark
+val WarmDarkSurfaceSoft= Color(0xFF2C2520)   // --surface-soft dark
+val WarmDarkSurfaceWarm= Color(0xFF332C27)   // --surface-warm dark
+val WarmDarkText       = Color(0xFFEDE8DC)   // --text dark
+val WarmDarkTextSoft   = Color(0xFF9C8C7C)   // --text-soft dark
+val WarmDarkBorder     = Color(0xFF3D3530)   // --border dark
+val WarmDarkPrimary    = Color(0xFFC4A882)   // lighter warm for dark mode actions
+val WarmDarkAccent     = Color(0xFF3D2B1F)   // accent-dark (same in both modes)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// ── Aliases para compatibilidad con pantallas que usan nombres Azure ─────────
+// Apuntan a la nueva paleta cálida para no tener que tocar todas las pantallas
+val AzureBlue          = WarmPrimary         // antes azul, ahora marrón cálido
+val AzureBackground    = WarmDarkBackground
+val AzureSurface       = WarmDarkSurface
+val AzureBorder        = WarmDarkBorder
+val AzureText          = WarmDarkText
+val AzureTextSecondary = WarmDarkTextSoft
+val AzureDark          = WarmDarkBackground

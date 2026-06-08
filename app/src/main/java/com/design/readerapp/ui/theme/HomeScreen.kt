@@ -94,7 +94,7 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = AzureSurface,
+                drawerContainerColor = MaterialTheme.colorScheme.surface,
                 drawerShape = RoundedCornerShape(0.dp)
             ) {
                 Spacer(Modifier.height(24.dp))
@@ -103,9 +103,9 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                     modifier = Modifier.padding(24.dp),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    color = AzureBlue
+                    color = MaterialTheme.colorScheme.primary
                 )
-                HorizontalDivider(color = AzureBorder, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(horizontal = 16.dp))
                 Spacer(Modifier.height(16.dp))
                 
                 DrawerItem("Inicio", Icons.Default.Home) { 
@@ -138,30 +138,30 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
         }
     ) {
         Scaffold(
-            containerColor = AzureBackground,
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { 
+                    title = {
                         Column {
                             val name = BooksService.currentUser?.name?.split(" ")?.firstOrNull() ?: "Lector"
-                            Text("Hola, $name", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = AzureText)
-                            Text("Bienvenido de vuelta", style = MaterialTheme.typography.bodySmall, color = AzureTextSecondary)
+                            Text("Hola, $name", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onBackground)
+                            Text("Bienvenido de vuelta", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, "Menu", tint = AzureText)
+                            Icon(Icons.Default.Menu, "Menu", tint = MaterialTheme.colorScheme.onBackground)
                         }
                     },
                     actions = {
                         IconButton(onClick = { navController.navigate("upload") }) {
-                            Icon(Icons.Default.Add, "Subir", tint = AzureBlue)
+                            Icon(Icons.Default.Add, "Subir", tint = MaterialTheme.colorScheme.primary)
                         }
                         IconButton(onClick = onThemeToggle) {
                             Text(if (darkTheme) "☀️" else "🌙", fontSize = 20.sp)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = AzureBackground)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
             }
         ) { padding ->
@@ -171,25 +171,28 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                     .fillMaxSize()
                     .padding(horizontal = 20.dp)
             ) {
+                val cs = MaterialTheme.colorScheme
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search books...", color = AzureTextSecondary) },
+                    placeholder = { Text("Buscar libros...", color = cs.onSurfaceVariant) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = AzureTextSecondary) },
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = cs.onSurfaceVariant) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AzureBlue,
-                        unfocusedBorderColor = AzureBorder,
-                        focusedContainerColor = AzureSurface,
-                        unfocusedContainerColor = AzureSurface,
-                        cursorColor = AzureBlue
+                        focusedBorderColor = cs.primary,
+                        unfocusedBorderColor = cs.outline,
+                        focusedContainerColor = cs.surface,
+                        unfocusedContainerColor = cs.surface,
+                        cursorColor = cs.primary,
+                        focusedTextColor = cs.onSurface,
+                        unfocusedTextColor = cs.onSurface
                     )
                 )
 
                 if (isLoading) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = AzureBlue)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 } else {
                     val continuingBooks = allBooks.filter { book -> 
@@ -244,7 +247,7 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                         }
 
                         item {
-                            Text("Géneros populares", fontWeight = FontWeight.Bold, color = AzureText)
+                            Text("Géneros populares", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             Spacer(Modifier.height(12.dp))
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(categories) { category ->
@@ -253,10 +256,10 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                                         onClick = { navController.navigate("group/${category.name}") },
                                         label = { Text(category.label) },
                                         colors = FilterChipDefaults.filterChipColors(
-                                            containerColor = AzureSurface,
-                                            labelColor = AzureTextSecondary
+                                            containerColor = MaterialTheme.colorScheme.surface,
+                                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                         ),
-                                        border = FilterChipDefaults.filterChipBorder(borderColor = AzureBorder, enabled = true, selected = false)
+                                        border = FilterChipDefaults.filterChipBorder(borderColor = MaterialTheme.colorScheme.outline, enabled = true, selected = false)
                                     )
                                 }
                             }
@@ -266,7 +269,7 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                             SectionHeader("Mi Actividad", "Ver todo") { navController.navigate("group/mis-libros") }
                             Spacer(Modifier.height(16.dp))
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                ActivityCard("Mis Libros", "📖", AzureBlue, Modifier.weight(1f)) {
+                                ActivityCard("Mis Libros", "📖", MaterialTheme.colorScheme.primary, Modifier.weight(1f)) {
                                     navController.navigate("group/mis-libros")
                                 }
                                 ActivityCard("Favoritos", "❤️", Color(0xFFEF4444), Modifier.weight(1f)) {
@@ -284,17 +287,17 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                                 modifier = Modifier.fillMaxWidth().height(100.dp).clickable {
                                     navController.navigate("group/explorar")
                                 },
-                                colors = CardDefaults.cardColors(containerColor = AzureSurface),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                             ) {
                                 Row(Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Box(Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)).background(AzureBackground), contentAlignment = Alignment.Center) {
+                                    Box(Modifier.size(60.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
                                         Text("📚", fontSize = 24.sp)
                                     }
                                     Spacer(Modifier.width(16.dp))
                                     Column {
-                                        Text("Explora la comunidad", fontWeight = FontWeight.Bold, color = AzureText)
-                                        Text("Encuentra libros de otros lectores.", fontSize = 12.sp, color = AzureTextSecondary)
+                                        Text("Explora la comunidad", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("Encuentra libros de otros lectores.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -310,9 +313,9 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
 fun BookLibraryCard(book: Book, progress: Float, onClick: () -> Unit) {
     Card(
         modifier = Modifier.width(120.dp).clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = AzureSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column {
             Box {
@@ -328,15 +331,15 @@ fun BookLibraryCard(book: Book, progress: Float, onClick: () -> Unit) {
                     LinearProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp),
-                        color = AzureBlue,
-                        trackColor = Color.Transparent
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = androidx.compose.ui.graphics.Color.Transparent
                     )
                 }
             }
             Text(
                 text = book.title,
                 modifier = Modifier.padding(8.dp),
-                color = AzureText,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 fontSize = 12.sp,
@@ -369,9 +372,9 @@ private fun openBook(
 fun ContinueReadingCard(book: Book, progress: Float, onClick: () -> Unit) {
     Card(
         modifier = Modifier.width(160.dp).clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = AzureSurface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBlue.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
     ) {
         Column {
             AsyncImage(
@@ -384,13 +387,13 @@ fun ContinueReadingCard(book: Book, progress: Float, onClick: () -> Unit) {
             )
             LinearProgressIndicator(
                 progress = { progress },
-                modifier = Modifier.fillMaxWidth().height(6.dp),
-                color = AzureBlue,
-                trackColor = AzureBorder
+                modifier = Modifier.fillMaxWidth().height(5.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outline
             )
             Column(Modifier.padding(12.dp)) {
-                Text(book.title, color = AzureText, fontWeight = FontWeight.ExtraBold, maxLines = 1, fontSize = 14.sp)
-                Text("${(progress * 100).toInt()}% completado", color = AzureBlue, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(book.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.ExtraBold, maxLines = 1, fontSize = 14.sp)
+                Text("${(progress * 100).toInt()}% completado", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
             }
         }
     }
@@ -404,9 +407,9 @@ fun DrawerItem(label: String, icon: ImageVector, onClick: () -> Unit) {
         onClick = onClick,
         icon = { Icon(icon, null) },
         colors = NavigationDrawerItemDefaults.colors(
-            unselectedContainerColor = Color.Transparent,
-            unselectedIconColor = AzureTextSecondary,
-            unselectedTextColor = AzureTextSecondary
+            unselectedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         modifier = Modifier.padding(horizontal = 12.dp)
     )
@@ -415,8 +418,8 @@ fun DrawerItem(label: String, icon: ImageVector, onClick: () -> Unit) {
 @Composable
 fun SectionHeader(title: String, action: String, onAction: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, fontWeight = FontWeight.Bold, color = AzureText, modifier = Modifier.weight(1f))
-        Text(action, fontSize = 12.sp, color = AzureBlue, modifier = Modifier.clickable { onAction() })
+        Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.weight(1f))
+        Text(action, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable { onAction() })
     }
 }
 
@@ -424,13 +427,13 @@ fun SectionHeader(title: String, action: String, onAction: () -> Unit) {
 fun ActivityCard(title: String, icon: String, accent: Color, modifier: Modifier, onClick: () -> Unit) {
     Card(
         modifier = modifier.clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = AzureSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(icon, fontSize = 24.sp)
             Spacer(Modifier.height(8.dp))
-            Text(title, fontWeight = FontWeight.Bold, color = AzureText)
+            Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             Box(Modifier.size(24.dp, 2.dp).background(accent))
         }
     }

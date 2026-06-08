@@ -75,10 +75,7 @@ interface BooksApiService {
     @GET("books/{id}/like-status")
     suspend fun getLikeStatus(@Path("id") id: String): LikeStatusResponse
 
-    // Notifications (MS-3)
-    @GET("notifications")
-    suspend fun getNotifications(): List<Notification>
-
+    // Notifications (MS-3) — no existe GET /notifications, solo negotiate y real-time via SignalR
     @POST("notifications/negotiate")
     suspend fun negotiateSignalR(): SignalRConnection
 }
@@ -187,7 +184,6 @@ object BooksService {
     suspend fun toggleLike(id: String) = api.toggleLike(id)
     suspend fun getLikeStatus(id: String) = api.getLikeStatus(id)
 
-    suspend fun getNotifications() = api.getNotifications()
     suspend fun negotiateSignalR() = api.negotiateSignalR()
 
     suspend fun generateUploadUrl(fileName: String, contentType: String) = 
