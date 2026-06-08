@@ -62,7 +62,7 @@ data class Favorite(
 )
 
 data class SasUrlResponse(
-    @SerializedName("url", alternate = ["uploadUrl"]) val url: String,
+    @SerializedName("url", alternate = ["uploadUrl", "sasUrl", "sas_url", "pdfUrl", "fileUrl"]) val url: String,
     val blobName: String? = null
 )
 

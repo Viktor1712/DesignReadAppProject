@@ -30,10 +30,10 @@ interface BooksApiService {
     suspend fun deleteBook(@Path("id") id: String): Response<Unit>
 
     @GET("books/{id}/file-url")
-    suspend fun getBookFileUrl(@Path("id") id: String): SasUrlResponse
+    suspend fun getBookFileUrl(@Path("id") id: String, @Query("userId") userId: String? = null): SasUrlResponse
 
     @GET("books/{id}/cover-url")
-    suspend fun getBookCoverUrl(@Path("id") id: String): SasUrlResponse
+    suspend fun getBookCoverUrl(@Path("id") id: String, @Query("userId") userId: String? = null): SasUrlResponse
 
     @POST("generate-upload-url")
     suspend fun generateUploadUrl(@Body request: UploadUrlRequest): SasUrlResponse
@@ -89,6 +89,13 @@ object BooksService {
 
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
+        
+        // Evitar enviar cabeceras de API a otros dominios (como Azure Blob Storage)
+        // Las SAS URLs de Azure fallan si se les envía un Bearer token o el sub-key
+        if (!original.url.toString().startsWith(BASE_URL)) {
+            return@Interceptor chain.proceed(original)
+        }
+
         val requestBuilder = original.newBuilder()
             .header("Ocp-Apim-Subscription-Key", SUBSCRIPTION_KEY)
         
@@ -135,8 +142,8 @@ object BooksService {
     suspend fun updateBook(id: String, book: Book) = api.updateBook(id, book)
     suspend fun deleteBook(id: String) = api.deleteBook(id)
     
-    suspend fun getBookFileUrl(id: String) = api.getBookFileUrl(id)
-    suspend fun getBookCoverUrl(id: String) = api.getBookCoverUrl(id)
+    suspend fun getBookFileUrl(id: String, userId: String? = null) = api.getBookFileUrl(id, userId)
+    suspend fun getBookCoverUrl(id: String, userId: String? = null) = api.getBookCoverUrl(id, userId)
     
     suspend fun getUsers() = api.getUsers()
     suspend fun getUserById(id: String) = api.getUserById(id)

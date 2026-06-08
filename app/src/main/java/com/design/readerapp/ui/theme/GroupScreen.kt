@@ -86,7 +86,7 @@ fun GroupScreen(
                     book.id?.let { id ->
                         launch {
                             try {
-                                book.coverUrl = BooksService.getBookCoverUrl(id).url
+                                book.coverUrl = BooksService.getBookCoverUrl(id, userId.ifBlank { firebaseUid }).url
                             } catch (_: Exception) { }
                         }
                     }
@@ -152,7 +152,7 @@ fun GroupScreen(
                         onClick = {
                             scope.launch {
                                 try {
-                                    val response = BooksService.getBookFileUrl(book.id!!)
+                                    val response = BooksService.getBookFileUrl(book.id!!, userId.ifBlank { firebaseUid })
                                     ReaderState.currentPdf = response.url.toUri()
                                     navController.navigate("reader?bookId=${book.id}")
                                 } catch (_: Exception) {
