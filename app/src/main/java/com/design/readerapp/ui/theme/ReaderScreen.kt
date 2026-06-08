@@ -6,6 +6,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,185 +15,144 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.github.barteksc.pdfviewer.PDFView
 import com.design.readerapp.BooksService
-import com.design.readerapp.ReadingProgress
 import com.design.readerapp.ReaderState
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Request
+import okhttp3.Response
 import java.io.File
-import java.net.URL
+import java.io.FileOutputStream
 
 @Composable
-fun ReaderScreen(bookId: Int = -1) {
-
+fun ReaderScreen(navController: NavController, bookId: String = "") {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val userId = 1
-    val pdfUri = ReaderState.currentPdf ?: return
+    val userId = BooksService.currentUser?.id ?: ""
+    val pdfUri = ReaderState.currentPdf
 
     var page by remember { mutableStateOf(0) }
     var total by remember { mutableStateOf(0) }
     var showUI by remember { mutableStateOf(true) }
     var isLoadingPdf by remember { mutableStateOf(false) }
     var localPdfFile by remember { mutableStateOf<File?>(null) }
+    var errorLoading by remember { mutableStateOf<String?>(null) }
     
     val prefs = context.getSharedPreferences("reader_prefs", Context.MODE_PRIVATE)
     val key = "page_${userId}_${bookId}"
     val savedPage = remember { prefs.getInt(key, 0) }
 
-    // Download PDF if it's a remote URL
     LaunchedEffect(pdfUri) {
-        val uriString = pdfUri.toString()
-        if (uriString.startsWith("http")) {
+        if (pdfUri == null) {
+            errorLoading = "URL no encontrada"
+            return@LaunchedEffect
+        }
+
+        val urlString = pdfUri.toString()
+        if (urlString.startsWith("http")) {
             isLoadingPdf = true
             withContext(Dispatchers.IO) {
                 try {
-                    val file = File(context.cacheDir, "book_${bookId}.pdf")
-                    // Simple download logic
-                    URL(uriString).openStream().use { input ->
-                        file.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
+                    val file = File(context.cacheDir, "book_$bookId.pdf")
+                    // Si el archivo existe pero la bookId es vacía (ej. abrir PDF externo), lo re-descargamos
+                    if (file.exists() && file.length() > 0 && bookId.isNotEmpty()) {
+                        localPdfFile = file
+                        isLoadingPdf = false
+                        return@withContext
                     }
-                    localPdfFile = file
+                    
+                    val request = Request.Builder().url(urlString).build()
+                    val client = BooksService.getOkHttpClient() 
+                    
+                    val response: Response = client.newCall(request).execute()
+                    if (response.isSuccessful) {
+                        response.body?.byteStream()?.use { input ->
+                            FileOutputStream(file).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        localPdfFile = file
+                    } else {
+                        errorLoading = "Error de servidor: ${response.code}"
+                    }
+                    response.close()
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    errorLoading = "Error de red: ${e.localizedMessage}"
                 } finally {
                     isLoadingPdf = false
                 }
             }
         } else {
-            // It's a local URI (e.g. from file picker)
-            // Note: This might need conversion to File if PDFView.fromUri fails for remote
-            // But if it's already local, we can try fromUri or copy to file
-        }
-    }
-
-    // Sync progress with API
-    LaunchedEffect(page, total) {
-        if (bookId != -1 && total > 0) {
+            // Caso Uri local (content://)
             try {
-                BooksService.updateReadingProgress(
-                    ReadingProgress(
-                        userId = userId,
-                        bookId = bookId,
-                        currentPage = page,
-                        totalPages = total,
-                        percentage = if (total > 0) (page * 100) / total else 0
-                    )
-                )
-                prefs.edit().putInt(key, page).apply()
+                val file = File(context.cacheDir, "temp_reader.pdf")
+                context.contentResolver.openInputStream(pdfUri)?.use { input ->
+                    FileOutputStream(file).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                localPdfFile = file
             } catch (e: Exception) {
-                // Ignore sync errors
+                errorLoading = "Error local: ${e.localizedMessage}"
             }
         }
     }
 
     Scaffold(
+        containerColor = Color.Black,
         topBar = {
             if (showUI) {
-                TopAppBar(
-                    title = { Text("Lector") },
+                CenterAlignedTopAppBar(
+                    title = { Text("Visualizador", color = Color.White, fontSize = 16.sp) },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = Color.Black.copy(alpha = 0.8f)
+                    ),
                     navigationIcon = {
-                        // We could add a back button here if needed
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    )
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.Close, "Cerrar", tint = Color.White)
+                        }
+                    }
                 )
             }
         }
     ) { padding ->
-
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(Modifier.fillMaxSize().background(Color.Black).padding(padding)) {
             if (isLoadingPdf) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Descargando libro...", style = MaterialTheme.typography.bodyMedium)
+                    CircularProgressIndicator(color = AzureBlue)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Cargando PDF...", color = Color.White)
                 }
-            } else if (localPdfFile != null || (!pdfUri.toString().startsWith("http"))) {
+            } else if (errorLoading != null) {
+                Text(errorLoading!!, color = Color.Red, modifier = Modifier.align(Alignment.Center))
+            } else if (localPdfFile != null) {
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         PDFView(ctx, null).apply {
-                            val configurator = if (localPdfFile != null) {
-                                fromFile(localPdfFile)
-                            } else {
-                                fromUri(pdfUri)
-                            }
-                            
-                            configurator
+                            fromFile(localPdfFile)
                                 .defaultPage(savedPage)
+                                .enableSwipe(true)
+                                .swipeHorizontal(false)
+                                .enableDoubletap(true)
                                 .onLoad { t -> total = t }
-                                .onPageChange { p, _ -> page = p }
-                                .onTap {
-                                    showUI = !showUI
-                                    true
+                                .onPageChange { p, _ -> 
+                                    page = p
+                                    if (bookId.isNotEmpty()) {
+                                        prefs.edit().putInt(key, p).apply()
+                                    }
                                 }
+                                .onTap { showUI = !showUI; true }
                                 .load()
                         }
-                    },
-                    update = { _ -> }
-                )
-            } else {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No se pudo cargar el PDF")
-                }
-            }
-
-            if (showUI && total > 0) {
-                val progress = if (total > 0) (page + 1).toFloat() / total else 0f
-
-                Column(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(Color.Black.copy(0.75f))
-                ) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.2f),
-                        strokeCap = StrokeCap.Round
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Página ${page + 1} de $total",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                        )
-                        
-                        Text(
-                            "${(progress * 100).toInt()}%",
-                            color = Color.White.copy(alpha = 0.8f),
-                            style = MaterialTheme.typography.labelLarge
-                        )
                     }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+                )
             }
         }
     }
