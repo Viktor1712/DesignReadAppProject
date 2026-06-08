@@ -40,7 +40,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 fun UploadScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
+
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
@@ -59,16 +59,16 @@ fun UploadScreen(navController: NavController) {
     )
 
     Scaffold(
-        containerColor = AzureBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Subir Nuevo Libro", fontWeight = FontWeight.Bold, color = AzureText, fontSize = 18.sp) },
+                title = { Text("Subir Nuevo Libro", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = AzureText)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AzureBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { padding ->
@@ -76,24 +76,24 @@ fun UploadScreen(navController: NavController) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(AzureBackground)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                "DETALLES DEL LIBRO", 
-                fontSize = 12.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = AzureBlue, 
+                "DETALLES DEL LIBRO",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 4.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = AzureSurface),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     UploadInputField("Título del libro", title) { title = it }
@@ -103,10 +103,10 @@ fun UploadScreen(navController: NavController) {
             }
 
             Text(
-                "ARCHIVOS Y MEDIA", 
-                fontSize = 12.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = AzureBlue, 
+                "ARCHIVOS Y MEDIA",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 4.dp)
             )
 
@@ -129,13 +129,13 @@ fun UploadScreen(navController: NavController) {
                     isSelected = imageUri != null
                 )
             }
-            
+
             if (imageUri != null) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = AzureSurface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Box(modifier = Modifier.height(200.dp).fillMaxWidth()) {
                         AsyncImage(
@@ -156,16 +156,16 @@ fun UploadScreen(navController: NavController) {
                         Toast.makeText(context, "Completa todos los campos, incluyendo la portada", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    
+
                     scope.launch {
                         try {
                             isUploading = true
-                            
+
                             // 1. Subir PDF
                             val pdfFileName = pdfUri?.lastPathSegment ?: "book.pdf"
                             val pdfSas = BooksService.generateUploadUrl(pdfFileName, "application/pdf")
                             val pdfBytes = context.contentResolver.openInputStream(pdfUri!!)?.readBytes() ?: throw Exception("Error leyendo PDF")
-                            
+
                             withContext(Dispatchers.IO) {
                                 val client = OkHttpClient()
                                 val pdfRequest = Request.Builder()
@@ -180,7 +180,7 @@ fun UploadScreen(navController: NavController) {
                             val coverFileName = imageUri?.lastPathSegment ?: "cover.jpg"
                             val coverSas = BooksService.generateUploadUrl(coverFileName, "image/jpeg")
                             val coverBytes = context.contentResolver.openInputStream(imageUri!!)?.readBytes() ?: throw Exception("Error leyendo Portada")
-                            
+
                             withContext(Dispatchers.IO) {
                                 val client = OkHttpClient()
                                 val coverRequest = Request.Builder()
@@ -190,11 +190,11 @@ fun UploadScreen(navController: NavController) {
                                     .build()
                                 client.newCall(coverRequest).execute().use { if (!it.isSuccessful) throw Exception("Error subiendo Portada") }
                             }
-                            
+
                             // 3. Registrar en la base de datos
                             val currentUserId = BooksService.currentUser?.id
                             if (currentUserId == null) throw Exception("Usuario no autenticado en BooksService")
-                            
+
                             BooksService.createBook(Book(
                                 title = title,
                                 author = author,
@@ -203,7 +203,7 @@ fun UploadScreen(navController: NavController) {
                                 coverBlobName = coverSas.blobName,
                                 userId = currentUserId
                             ))
-                            
+
                             Toast.makeText(context, "¡Libro y portada subidos con éxito!", Toast.LENGTH_SHORT).show()
                             navController.popBackStack()
                         } catch (e: Exception) {
@@ -216,10 +216,13 @@ fun UploadScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().height(50.dp).padding(bottom = 0.dp),
                 enabled = !isUploading,
                 shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AzureBlue)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 if (isUploading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                 } else {
                     Text("SUBIR Y PUBLICAR", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                 }
@@ -232,19 +235,19 @@ fun UploadScreen(navController: NavController) {
 @Composable
 fun UploadInputField(label: String, value: String, onValueChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, fontSize = 12.sp, color = AzureTextSecondary, fontWeight = FontWeight.Medium)
+        Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = AzureText),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AzureBlue,
-                unfocusedBorderColor = AzureBorder,
-                focusedContainerColor = AzureBackground,
-                unfocusedContainerColor = AzureBackground,
-                cursorColor = AzureBlue
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background,
+                cursorColor = MaterialTheme.colorScheme.primary
             ),
             singleLine = true
         )
@@ -257,9 +260,9 @@ fun FileSelectorCard(title: String, subtitle: String, icon: String, onClick: () 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AzureSurface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) AzureBlue else AzureBorder)
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -268,24 +271,24 @@ fun FileSelectorCard(title: String, subtitle: String, icon: String, onClick: () 
             Surface(
                 modifier = Modifier.size(40.dp),
                 shape = RoundedCornerShape(8.dp),
-                color = if (isSelected) AzureBlue.copy(alpha = 0.1f) else AzureBackground
+                color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.background
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(icon, fontSize = 20.sp)
                 }
             }
-            
+
             Spacer(Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, color = if (isSelected) AzureBlue else AzureText, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(subtitle, color = AzureTextSecondary, fontSize = 12.sp, maxLines = 1)
+                Text(title, color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, maxLines = 1)
             }
-            
+
             if (isSelected) {
                 Text("✅", fontSize = 16.sp)
             } else {
-                Text("📁", fontSize = 16.sp, color = AzureTextSecondary)
+                Text("📁", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

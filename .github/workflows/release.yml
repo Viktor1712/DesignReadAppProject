@@ -34,6 +34,26 @@ jobs:
           echo "VERSION_NAME=$VERSION" >> $GITHUB_ENV
           echo "VERSION_CODE=${{ github.run_number }}" >> $GITHUB_ENV
 
+      - name: Generate legacy mipmap icons from Logo.jpg
+        run: |
+          sudo apt-get install -y imagemagick
+
+          # Íconos PNG para Android < 8 (reemplazan los webp del robot por defecto)
+          convert Logo.jpg -resize 48x48   app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert Logo.jpg -resize 72x72   app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert Logo.jpg -resize 96x96   app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert Logo.jpg -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert Logo.jpg -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+          cp app/src/main/res/mipmap-mdpi/ic_launcher.png    app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.png    app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-xhdpi/ic_launcher.png   app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-xxhdpi/ic_launcher.png  app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp app/src/main/res/mipmap-xxxhdpi/ic_launcher.png app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+
+          # Eliminar webp para evitar conflictos de recursos
+          find app/src/main/res -name "*.webp" -delete
+
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -70,25 +90,25 @@ jobs:
           echo "=== AAB files ==="
           find app/build/outputs -name "*.aab" 2>/dev/null || echo "No AABs"
 
-      - name: Rename artifacts (tolerante)
+      - name: Rename artifacts
         run: |
           mkdir -p artifacts
-          
+
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           AAB=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
-          
+
           if [ -z "$APK" ]; then
             echo "❌ No se encontró APK. Listing completo:"
             find app/build -type f
             exit 1
           fi
-          
-          cp "$APK" "artifacts/app-v${{ env.VERSION_NAME }}.apk"
-          
+
+          cp "$APK" "artifacts/Biblio-TEC-v${{ env.VERSION_NAME }}.apk"
+
           if [ -n "$AAB" ]; then
-            cp "$AAB" "artifacts/app-v${{ env.VERSION_NAME }}.aab"
+            cp "$AAB" "artifacts/Biblio-TEC-v${{ env.VERSION_NAME }}.aab"
           fi
-          
+
           ls -la artifacts/
 
       - name: Remove keystore
@@ -98,11 +118,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Release v${{ env.VERSION_NAME }}"
+          name: "Biblio-TEC v${{ env.VERSION_NAME }}"
           tag_name: ${{ github.ref_name }}
           files: |
-            artifacts/app-v${{ env.VERSION_NAME }}.apk
-            artifacts/app-v${{ env.VERSION_NAME }}.aab
+            artifacts/Biblio-TEC-v${{ env.VERSION_NAME }}.apk
+            artifacts/Biblio-TEC-v${{ env.VERSION_NAME }}.aab
           generate_release_notes: true
           draft: true
           prerelease: false

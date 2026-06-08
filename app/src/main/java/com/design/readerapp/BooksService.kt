@@ -1,5 +1,8 @@
 package com.design.readerapp
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -56,7 +59,10 @@ interface BooksApiService {
     suspend fun getReadingProgress(): List<ReadingProgress>
 
     @POST("reading-progress")
-    suspend fun updateReadingProgress(@Body progress: ReadingProgress): ReadingProgress
+    suspend fun createReadingProgress(@Body progress: ReadingProgress): ReadingProgress
+
+    @PUT("reading-progress/{id}")
+    suspend fun updateReadingProgressById(@Path("id") id: String, @Body progress: ReadingProgress): ReadingProgress
 
     // Favorites (MS-2)
     @GET("favorites")
@@ -85,7 +91,7 @@ object BooksService {
     private const val SUBSCRIPTION_KEY = "b23b54a59f4f449eb64d507b55ea93e3"
     
     var authToken: String? = null
-    var currentUser: User? = null
+    var currentUser: User? by mutableStateOf(null)
 
     private val authInterceptor = Interceptor { chain ->
         val original = chain.request()
@@ -175,7 +181,26 @@ object BooksService {
     }
     
     suspend fun getReadingProgress() = api.getReadingProgress()
-    suspend fun updateReadingProgress(progress: ReadingProgress) = api.updateReadingProgress(progress)
+
+    /**
+     * Guarda el progreso de lectura. El backend tiene un índice único en
+     * (userId, bookId), por lo que un POST repetido falla con clave duplicada.
+     * Por eso hacemos upsert: si ya existe un registro para este libro lo
+     * actualizamos con PUT; si no, lo creamos con POST.
+     */
+    suspend fun updateReadingProgress(progress: ReadingProgress): ReadingProgress {
+        val existingId = try {
+            api.getReadingProgress().firstOrNull { it.bookId == progress.bookId }?.id
+        } catch (e: Exception) {
+            null
+        }
+
+        return if (existingId != null) {
+            api.updateReadingProgressById(existingId, progress)
+        } else {
+            api.createReadingProgress(progress)
+        }
+    }
     
     suspend fun getFavorites() = api.getFavorites()
     suspend fun addFavorite(bookId: String, userId: String) = api.addFavorite(Favorite(bookId = bookId, userId = userId))

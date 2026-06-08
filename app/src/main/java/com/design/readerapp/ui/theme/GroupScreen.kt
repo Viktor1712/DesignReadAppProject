@@ -36,20 +36,20 @@ import androidx.navigation.NavController as NavControllerAlias
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupScreen(
-    navController: NavControllerAlias, 
-    groupName: String, 
-    darkTheme: Boolean, 
+    navController: NavControllerAlias,
+    groupName: String,
+    darkTheme: Boolean,
     onThemeToggle: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val userId = BooksService.currentUser?.id ?: "" 
+    val userId = BooksService.currentUser?.id ?: ""
     val firebaseUid = BooksService.currentUser?.firebaseUid ?: ""
 
     var books by remember { mutableStateOf(listOf<Book>()) }
     var favorites by remember { mutableStateOf(listOf<Favorite>()) }
     var readingProgress by remember { mutableStateOf(listOf<ReadingProgress>()) }
-    
+
     var selectedBook by remember { mutableStateOf<Book?>(null) }
     var showMenu by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
@@ -57,8 +57,8 @@ fun GroupScreen(
 
     val filteredBooks = remember(books, searchQuery) {
         if (searchQuery.isBlank()) books
-        else books.filter { 
-            it.title.contains(searchQuery, ignoreCase = true) || 
+        else books.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
             it.author.contains(searchQuery, ignoreCase = true) ||
             it.category.contains(searchQuery, ignoreCase = true)
         }
@@ -72,7 +72,7 @@ fun GroupScreen(
                 // Intentamos obtener favoritos y progreso, si falla uno no bloqueamos el resto
                 val allFavorites = try { BooksService.getFavorites() } catch (e: Exception) { emptyList() }
                 val allProgress = try { BooksService.getReadingProgress() } catch (e: Exception) { emptyList() }
-                
+
                 favorites = allFavorites
                 readingProgress = allProgress
 
@@ -120,20 +120,20 @@ fun GroupScreen(
     LaunchedEffect(groupName) { loadData() }
 
     Scaffold(
-        containerColor = AzureBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Text(
-                        text = groupName.replace("-", " ").uppercase(), 
+                        text = groupName.replace("-", " ").uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = AzureText
-                    ) 
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = AzureText)
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
                 actions = {
@@ -151,11 +151,11 @@ fun GroupScreen(
                                 singleLine = true
                             )
                             IconButton(onClick = { isSearching = false; searchQuery = "" }) {
-                                Icon(Icons.Default.Close, null, tint = AzureText)
+                                Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onBackground)
                             }
                         } else {
                             IconButton(onClick = { isSearching = true }) {
-                                Icon(Icons.Default.Search, null, tint = AzureText)
+                                Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.onBackground)
                             }
                         }
                     }
@@ -163,13 +163,13 @@ fun GroupScreen(
                         Text(if (darkTheme) "☀️" else "🌙", fontSize = 20.sp)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AzureBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { padding ->
         if (isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AzureBlue)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
             LazyVerticalGrid(
@@ -218,8 +218,8 @@ fun GroupScreen(
         val isFav = favorites.any { it.bookId == selectedBook?.id && (it.userId == userId || it.userId == firebaseUid) }
         ModalBottomSheet(
             onDismissRequest = { showMenu = false },
-            containerColor = AzureSurface,
-            contentColor = AzureText
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ) {
             Column(Modifier.padding(bottom = 32.dp)) {
                 ListItem(
@@ -258,10 +258,10 @@ fun GroupScreen(
                         }
                     }
                 )
-                
+
                 if (selectedBook?.userId == userId || selectedBook?.userId == firebaseUid) {
-                    HorizontalDivider(color = AzureBorder, modifier = Modifier.padding(vertical = 8.dp))
-                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline, modifier = Modifier.padding(vertical = 8.dp))
+
                     ListItem(
                         headlineContent = { Text("Editar Libro") },
                         leadingContent = { Text("✏️", fontSize = 20.sp) },
@@ -275,7 +275,7 @@ fun GroupScreen(
                     ListItem(
                         headlineContent = { Text("Eliminar Libro") },
                         leadingContent = { Text("🗑️", fontSize = 20.sp) },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent, headlineColor = Color.Red),
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent, headlineColor = MaterialTheme.colorScheme.error),
                         modifier = Modifier.clickable {
                             scope.launch {
                                 try {
@@ -302,8 +302,8 @@ fun BookCard(book: Book, isFavorite: Boolean, progress: Float, onClick: () -> Un
     ) {
         Card(
             shape = RoundedCornerShape(8.dp),
-            colors = CardDefaults.cardColors(containerColor = AzureSurface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Box {
                 AsyncImage(
@@ -325,14 +325,14 @@ fun BookCard(book: Book, isFavorite: Boolean, progress: Float, onClick: () -> Un
                     LinearProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(4.dp),
-                        color = AzureBlue,
+                        color = MaterialTheme.colorScheme.primary,
                         trackColor = Color.Transparent
                     )
                 }
             }
         }
         Spacer(Modifier.height(8.dp))
-        Text(book.title, color = AzureText, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(book.author, color = AzureTextSecondary, style = MaterialTheme.typography.bodySmall)
+        Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(book.author, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
     }
 }

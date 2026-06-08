@@ -84,7 +84,7 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                     savedPage = p
                     android.widget.Toast.makeText(context, "Progreso guardado: Página ${p + 1}", android.widget.Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    android.widget.Toast.makeText(context, "Error al guardar progreso", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, "Error al guardar progreso: ${e.localizedMessage ?: "desconocido"}", android.widget.Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -211,10 +211,16 @@ fun ReaderScreen(navController: NavController, bookId: String = "") {
                             )
                             Button(
                                 onClick = { saveProgress(page, total) },
-                                colors = ButtonDefaults.buttonColors(containerColor = AzureBlue),
+                                enabled = hasUnsavedChanges,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AzureBlue,
+                                    contentColor = Color.White,
+                                    disabledContainerColor = Color.White.copy(alpha = 0.15f),
+                                    disabledContentColor = Color.White.copy(alpha = 0.5f)
+                                ),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text("Guardar Progreso")
+                                Text("Guardar")
                             }
                         }
                     }
