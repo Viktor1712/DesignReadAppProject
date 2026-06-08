@@ -221,7 +221,7 @@ La intención del proyecto es ofrecer una experiencia consistente entre platafor
 
 ## Estado del proyecto
 
-Proyecto académico en desarrollo.
+Proyecto académico terminado.
 
 ## Autores
 
