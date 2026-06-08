@@ -159,7 +159,7 @@ fun UploadScreen(navController: NavController) {
                                 category = category,
                                 pdfBlobName = pdfSas.blobName,
                                 coverBlobName = coverSas.blobName,
-                                userId = BooksService.currentUser?.id ?: BooksService.currentUser?.firebaseUid
+                                userId = BooksService.currentUser?.id
                             ))
                             
                             Toast.makeText(context, "¡Libro y portada subidos con éxito!", Toast.LENGTH_SHORT).show()

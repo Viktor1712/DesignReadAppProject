@@ -101,7 +101,10 @@ fun GroupScreen(
                     book.id?.let { id ->
                         launch {
                             try {
-                                book.coverUrl = BooksService.getBookCoverUrl(id, userId.ifBlank { firebaseUid }).url
+                                val sas = BooksService.getBookCoverUrl(id, userId.ifBlank { firebaseUid })
+                                books = books.map {
+                                    if (it.id == id) it.copy(coverUrl = sas.url) else it
+                                }
                             } catch (_: Exception) { }
                         }
                     }

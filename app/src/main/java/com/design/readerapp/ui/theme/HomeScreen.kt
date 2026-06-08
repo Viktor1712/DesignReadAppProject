@@ -22,8 +22,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.design.readerapp.Category
-import com.design.readerapp.BooksService
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.net.toUri
+import coil.compose.AsyncImage
+import com.design.readerapp.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -33,17 +35,45 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
     val auth = FirebaseAuth.getInstance()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     
     var categories by remember { mutableStateOf(listOf<Category>()) }
+    var readingProgress by remember { mutableStateOf(listOf<ReadingProgress>()) }
+    var favorites by remember { mutableStateOf(listOf<Favorite>()) }
+    var allBooks by remember { mutableStateOf(listOf<Book>()) }
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
+
+    val userId = BooksService.currentUser?.id ?: ""
+    val firebaseUid = BooksService.currentUser?.firebaseUid ?: ""
 
     LaunchedEffect(Unit) {
         try {
             isLoading = true
             categories = BooksService.getCategories()
+            allBooks = BooksService.getBooks()
+            readingProgress = try { BooksService.getReadingProgress() } catch (e: Exception) { emptyList() }
+            favorites = try { BooksService.getFavorites() } catch (e: Exception) { emptyList() }
+            
+            // Cargar portadas para todos los libros visibles
+            val userFavIds = favorites.filter { it.userId == userId || it.userId == firebaseUid }.map { it.bookId }
+            val booksToLoad = allBooks.filter { book -> 
+                readingProgress.any { it.bookId == book.id } || book.id in userFavIds
+            }
+
+            booksToLoad.forEach { book ->
+                launch {
+                    try {
+                        val sas = BooksService.getBookCoverUrl(book.id!!, userId.ifBlank { firebaseUid })
+                        allBooks = allBooks.map { 
+                            if (it.id == book.id) it.copy(coverUrl = sas.url) else it 
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
         } catch (e: Exception) {
-            // Error fallback
+            // Reintentar si falla la sesión
+            isLoading = false
         } finally {
             if (categories.isEmpty()) {
                 categories = listOf(
@@ -108,7 +138,13 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
             containerColor = AzureBackground,
             topBar = {
                 TopAppBar(
-                    title = { Text("Explorar", fontWeight = FontWeight.Bold, color = AzureText) },
+                    title = { 
+                        Column {
+                            val name = BooksService.currentUser?.name?.split(" ")?.firstOrNull() ?: "Lector"
+                            Text("Hola, $name", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = AzureText)
+                            Text("Bienvenido de vuelta", style = MaterialTheme.typography.bodySmall, color = AzureTextSecondary)
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(Icons.Default.Menu, "Menu", tint = AzureText)
@@ -153,7 +189,51 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                         CircularProgressIndicator(color = AzureBlue)
                     }
                 } else {
+                    val continuingBooks = allBooks.filter { book -> 
+                        readingProgress.any { it.bookId == book.id && it.currentPage > 0 } 
+                    }
+                    val userFavIds = favorites.filter { it.userId == userId || it.userId == firebaseUid }.map { it.bookId }
+                    val libraryBooks = allBooks.filter { it.id in userFavIds }
+
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                        if (continuingBooks.isNotEmpty()) {
+                            item {
+                                SectionHeader("Continuar leyendo", "Ver todos") { navController.navigate("group/mis-libros") }
+                                Spacer(Modifier.height(16.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    items(continuingBooks) { book ->
+                                        val progress = readingProgress.find { it.bookId == book.id }
+                                        val fraction = if (progress != null && progress.totalPages > 0) {
+                                            progress.currentPage.toFloat() / progress.totalPages
+                                        } else 0f
+
+                                        ContinueReadingCard(book, fraction) {
+                                            openBook(book, scope, context, userId, firebaseUid, navController)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (libraryBooks.isNotEmpty()) {
+                            item {
+                                SectionHeader("Mi Biblioteca", "Ver todos") { navController.navigate("group/favoritos") }
+                                Spacer(Modifier.height(16.dp))
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    items(libraryBooks) { book ->
+                                        val progress = readingProgress.find { it.bookId == book.id }
+                                        val fraction = if (progress != null && progress.totalPages > 0) {
+                                            progress.currentPage.toFloat() / progress.totalPages
+                                        } else 0f
+                                        
+                                        BookLibraryCard(book, fraction) {
+                                            openBook(book, scope, context, userId, firebaseUid, navController)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         item {
                             Text("Géneros populares", fontWeight = FontWeight.Bold, color = AzureText)
                             Spacer(Modifier.height(12.dp))
@@ -212,6 +292,90 @@ fun HomeScreen(navController: NavController, darkTheme: Boolean, onThemeToggle: 
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookLibraryCard(book: Book, progress: Float, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.width(120.dp).clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = AzureSurface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+    ) {
+        Column {
+            Box {
+                AsyncImage(
+                    model = book.coverUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(160.dp),
+                    contentScale = ContentScale.Crop
+                )
+                if (progress > 0) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                        color = AzureBlue,
+                        trackColor = Color.Transparent
+                    )
+                }
+            }
+            Text(
+                text = book.title,
+                modifier = Modifier.padding(8.dp),
+                color = AzureText,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                fontSize = 12.sp,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+private fun openBook(
+    book: Book,
+    scope: kotlinx.coroutines.CoroutineScope,
+    context: android.content.Context,
+    userId: String,
+    firebaseUid: String,
+    navController: NavController
+) {
+    scope.launch {
+        try {
+            val response = BooksService.getBookFileUrl(book.id!!, userId.ifBlank { firebaseUid })
+            ReaderState.currentPdf = response.url.toUri()
+            navController.navigate("reader?bookId=${book.id}")
+        } catch (_: Exception) {
+            android.widget.Toast.makeText(context, "Error al abrir el PDF", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+@Composable
+fun ContinueReadingCard(book: Book, progress: Float, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.width(160.dp).clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = AzureSurface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, AzureBorder)
+    ) {
+        Column {
+            AsyncImage(
+                model = book.coverUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                contentScale = ContentScale.Crop
+            )
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(4.dp),
+                color = AzureBlue,
+                trackColor = AzureBorder
+            )
+            Column(Modifier.padding(8.dp)) {
+                Text(book.title, color = AzureText, fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 14.sp)
+                Text("${(progress * 100).toInt()}% completado", color = AzureTextSecondary, fontSize = 12.sp)
             }
         }
     }

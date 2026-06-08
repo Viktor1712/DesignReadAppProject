@@ -24,10 +24,10 @@ data class Book(
 data class User(
     @SerializedName("_id", alternate = ["id"]) val id: String? = null,
     val username: String = "",
-    val name: String = "",
+    @SerializedName("name", alternate = ["full_name"]) val name: String = "",
     val email: String = "",
     val initials: String? = null,
-    val firebaseUid: String? = null
+    @SerializedName("firebaseUid", alternate = ["firebase_uid"]) val firebaseUid: String? = null
 )
 
 data class AuthResponse(
@@ -47,18 +47,18 @@ data class Category(
 
 data class ReadingProgress(
     @SerializedName("_id", alternate = ["id"]) val id: String? = null,
-    val userId: String = "",
-    val bookId: String = "",
-    val currentPage: Int = 0,
-    val totalPages: Int = 0,
+    @SerializedName("userId", alternate = ["user_id"]) val userId: String = "",
+    @SerializedName("bookId", alternate = ["book_id"]) val bookId: String = "",
+    @SerializedName("currentPage", alternate = ["current_page"]) val currentPage: Int = 0,
+    @SerializedName("totalPages", alternate = ["total_pages"]) val totalPages: Int = 0,
     val percentage: Int = 0,
-    val updatedAt: String? = null
+    @SerializedName("updatedAt", alternate = ["updated_at"]) val updatedAt: String? = null
 )
 
 data class Favorite(
     @SerializedName("_id", alternate = ["id"]) val id: String? = null,
-    val userId: String = "",
-    val bookId: String = ""
+    @SerializedName("userId", alternate = ["user_id"]) val userId: String = "",
+    @SerializedName("bookId", alternate = ["book_id"]) val bookId: String = ""
 )
 
 data class SasUrlResponse(
